@@ -6,3 +6,7 @@ venv/
 .vscode/
 .DS_Store
 *.log
+
+# Rieng tu — khong push len GitHub
+docs/HANDOFF.md
+docs/LOG.md
