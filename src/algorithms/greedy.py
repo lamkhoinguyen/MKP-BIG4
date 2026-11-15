@@ -1,11 +1,18 @@
 """Greedy (tham lam) — Thanh vien 1.
 
-Huong dan:
-- Diem uu ti: mat hang / (tai nguyen da dung + weight moi) tren Nhieu rang buoc
-  (KHONG chi profit/1-kieu-tai-nguyen).
-- Chon lap lai den khi khong con mat hang de them vao (giu duong tim kiem).
-- Bao dam: moi buoc kiem tra them vao co vi phai capacity hay khong.
+Y tuong (tham lam thich nghi tren NHIEU rang buoc):
+- Moi vong lap, voi cac mat hang con vua capacity, tinh diem uu tien
+      score_j = profit_j / sum_i ( w_ij / (b_i - used_i) )
+  tuc la loi nhuan chia cho muc "ton kem" cua mat hang so voi tai nguyen CON LAI
+  cua tung rang buoc (tai nguyen cang can kiet thi cang bi tinh nang).
+- Chon mat hang co diem cao nhat, cap nhat tai nguyen da dung, tinh lai diem.
+- Lap den khi khong con mat hang nao them vao duoc ma khong vi pham capacity.
+
+Do phuc tap: moi vong O(n*m), toi da n vong => O(n^2 * m); bo nho O(n*m).
+Tat dinh (khong dung seed). Luon cho nghiem hop le, khong dam bao toi uu.
 """
+
+import time
 
 import numpy as np
 
@@ -15,6 +22,8 @@ from src.core.evaluator import build_result, compute_resource_usage
 from src.core.model import MKPProblem, MKPResult
 from src.core.validator import is_feasible
 
+_EPS = 1e-12
+
 
 def solve(
     problem: MKPProblem,
@@ -22,4 +31,58 @@ def solve(
     time_limit: float = TIME_LIMIT_SECONDS,
     seed: int = 0,
 ) -> MKPResult:
-    raise NotImplementedError("Thanh vien 1: implement greedy o day")
+    start = time.perf_counter()
+
+    n, m = problem.n, problem.m
+    profits = np.asarray(problem.profits, dtype=np.float64)
+    weights = np.asarray(problem.weights, dtype=np.float64)
+    caps = np.asarray(problem.capacities, dtype=np.float64)
+
+    x = np.zeros(n, dtype=int)
+    used = np.zeros(m, dtype=np.float64)
+    candidate = profits > 0          # mat hang con duoc xet (chua chon, co loi nhuan)
+    history: list = []
+    status = STATUS_OK
+    iteration = 0
+
+    while True:
+        if time.perf_counter() - start > time_limit:
+            status = STATUS_TIMEOUT
+            break
+
+        # Mat hang them vao van khong vuot rang buoc nao
+        fits = candidate & np.all(used[:, None] + weights <= caps[:, None], axis=0)
+        idx = np.flatnonzero(fits)
+        if idx.size == 0:
+            break
+
+        # Diem uu tien theo tai nguyen con lai cua tung rang buoc
+        remaining = np.maximum(caps - used, _EPS)
+        cost = (weights[:, idx] / remaining[:, None]).sum(axis=0)
+        score = profits[idx] / np.maximum(cost, _EPS)
+
+        best = int(np.argmax(score))
+        j = int(idx[best])
+
+        x[j] = 1
+        used += weights[:, j]
+        candidate[j] = False
+
+        iteration += 1
+        history.append({
+            "iteration": iteration,
+            "profit": float(profits @ x),
+            "item": j,
+            "score": float(score[best]),
+        })
+
+    # Chot an toan: neu sai so so thuc lam vuot capacity thi bo bot mat hang loi nhuan thap
+    while not is_feasible(problem, x):
+        chosen = np.flatnonzero(x)
+        usage = compute_resource_usage(problem, x)
+        if chosen.size == 0 or not np.any(usage > caps):
+            break
+        x[chosen[np.argmin(profits[chosen])]] = 0
+
+    runtime = time.perf_counter() - start
+    return build_result(problem, x, runtime=runtime, history=history, status=status)
