@@ -8,7 +8,7 @@ import time
 import numpy as np
 
 from src.algorithms import TIME_LIMIT_SECONDS
-from src.core.config import STATUS_OK, STATUS_TIMEOUT
+from src.core.config import STATUS_OK
 from src.core.evaluator import build_result
 from src.core.model import MKPProblem, MKPResult
 
@@ -18,6 +18,9 @@ MAX_GENERATIONS = 500
 CROSSOVER_RATE = 0.85
 ELITE_COUNT = 2
 TOURNAMENT_SIZE = 3
+
+# Trang thai hien thi khi het gioi han thoi gian.
+STATUS_NA = "N/A"
 
 
 def solve(
@@ -36,12 +39,13 @@ def solve(
     weights = problem.weights
     capacities = problem.capacities
 
+    # Diem uu tien theo loi nhuan / tai nguyen.
     safe_capacities = np.maximum(capacities, 1e-12)
     normalized_weights = weights / safe_capacities[:, None]
     resource_cost = np.sum(normalized_weights, axis=0)
     scores = profits / np.maximum(resource_cost, 1e-12)
 
-    # Sap xep mot lan, tranh lap lai trong moi lan repair.
+    # Sap xep mot lan de tang hieu suat.
     remove_order = np.argsort(scores)
     add_order = np.argsort(-scores)
 
@@ -52,10 +56,10 @@ def solve(
         return bool(np.all(weights @ x <= capacities))
 
     def repair(x):
-        """Sua nghiem. Tra ve None neu het thoi gian."""
+        """Sua nghiem; tra ve None khi het thoi gian."""
         x = x.copy()
 
-        # Loai kien hang uu tien thap neu vi pham.
+        # Loai cac kien hang co do uu tien thap.
         for j in remove_order:
             if is_timeout():
                 return None
@@ -66,7 +70,7 @@ def solve(
             if x[j] == 1:
                 x[j] = 0
 
-        # Bo sung kien hang uu tien cao.
+        # Bo sung cac kien hang co do uu tien cao.
         for j in add_order:
             if is_timeout():
                 return None
@@ -84,9 +88,11 @@ def solve(
 
     def tournament(population, values):
         ids = rng.integers(
-            0, len(population),
+            0,
+            len(population),
             size=TOURNAMENT_SIZE
         )
+
         winner = ids[np.argmax(values[ids])]
         return population[winner].copy()
 
@@ -114,15 +120,19 @@ def solve(
         return child1, child2
 
     def mutate(x):
-        rate = min(0.1, max(0.005, 1.0 / max(n, 1)))
+        rate = min(
+            0.1,
+            max(0.005, 1.0 / max(n, 1))
+        )
+
         mask = rng.random(n) < rate
         x[mask] = 1 - x[mask]
+
         return x
 
-    # Nghiem ban dau: khong chon kien nao.
+    # Nghiem ban dau an toan.
     best_x = np.zeros(n, dtype=np.int8)
     best_profit = fitness(best_x)
-
     history = []
     timed_out = False
 
@@ -132,7 +142,7 @@ def solve(
             best_x,
             runtime=time.perf_counter() - start,
             history=history,
-            status=STATUS_TIMEOUT,
+            status=STATUS_NA,
         )
 
     # Tao quan the ban dau.
@@ -146,11 +156,12 @@ def solve(
         if i == 0:
             x = np.zeros(n, dtype=np.int8)
         else:
-            x = rng.integers(0, 2, size=n, dtype=np.int8)
+            x = rng.integers(
+                0, 2, size=n, dtype=np.int8
+            )
 
         x = repair(x)
 
-        # Khong dung nghiem chua repair xong.
         if x is None:
             timed_out = True
             break
@@ -168,15 +179,19 @@ def solve(
 
     # Vong lap tien hoa.
     if not timed_out:
-        for generation in range(1, MAX_GENERATIONS + 1):
+
+        for generation in range(
+            1, MAX_GENERATIONS + 1
+        ):
 
             if is_timeout():
                 timed_out = True
                 break
 
-            values = np.array(
-                [fitness(x) for x in population]
-            )
+            values = np.array([
+                fitness(x) for x in population
+            ])
+
             order = np.argsort(-values)
 
             new_population = [
@@ -190,10 +205,16 @@ def solve(
                     timed_out = True
                     break
 
-                parent1 = tournament(population, values)
-                parent2 = tournament(population, values)
+                parent1 = tournament(
+                    population, values
+                )
+                parent2 = tournament(
+                    population, values
+                )
 
-                child1, child2 = crossover(parent1, parent2)
+                child1, child2 = crossover(
+                    parent1, parent2
+                )
 
                 for child in (child1, child2):
 
@@ -204,7 +225,6 @@ def solve(
                     child = mutate(child)
                     child = repair(child)
 
-                    # Khong danh gia ca the chua repair xong.
                     if child is None:
                         timed_out = True
                         break
@@ -238,7 +258,9 @@ def solve(
     if runtime >= max(0.0, time_limit):
         timed_out = True
 
-    status = STATUS_TIMEOUT if timed_out else STATUS_OK
+    # Het thoi gian -> N/A
+    # Hoan thanh binh thuong -> ok
+    status = STATUS_NA if timed_out else STATUS_OK
 
     return build_result(
         problem,
