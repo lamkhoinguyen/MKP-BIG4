@@ -8,7 +8,7 @@ import time
 import numpy as np
 
 from src.algorithms import TIME_LIMIT_SECONDS
-from src.core.config import STATUS_OK
+from src.core.config import STATUS_OK, STATUS_TIMEOUT
 from src.core.evaluator import build_result
 from src.core.model import MKPProblem, MKPResult
 
@@ -18,9 +18,6 @@ MAX_GENERATIONS = 500
 CROSSOVER_RATE = 0.85
 ELITE_COUNT = 2
 TOURNAMENT_SIZE = 3
-
-# Trang thai hien thi khi het gioi han thoi gian.
-STATUS_NA = "N/A"
 
 
 def solve(
@@ -142,7 +139,7 @@ def solve(
             best_x,
             runtime=time.perf_counter() - start,
             history=history,
-            status=STATUS_NA,
+            status=STATUS_TIMEOUT,
         )
 
     # Tao quan the ban dau.
@@ -246,6 +243,7 @@ def solve(
             history.append({
                 "iteration": generation,
                 "profit": float(best_profit),
+                "best_profit": float(best_profit),
             })
 
             if timed_out:
@@ -258,9 +256,21 @@ def solve(
     if runtime >= max(0.0, time_limit):
         timed_out = True
 
-    # Het thoi gian -> N/A
+    # Dong bo history voi nghiem tot nhat thuc te tra ve.
+    best_profit = fitness(best_x)
+    if history:
+        history[-1]["profit"] = float(best_profit)
+        history[-1]["best_profit"] = float(best_profit)
+    else:
+        history.append({
+            "iteration": 0,
+            "profit": float(best_profit),
+            "best_profit": float(best_profit),
+        })
+
+    # Het thoi gian -> timeout
     # Hoan thanh binh thuong -> ok
-    status = STATUS_NA if timed_out else STATUS_OK
+    status = STATUS_TIMEOUT if timed_out else STATUS_OK
 
     return build_result(
         problem,

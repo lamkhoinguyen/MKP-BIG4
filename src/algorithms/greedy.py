@@ -63,17 +63,22 @@ def solve(
 
         best = int(np.argmax(score))
         j = int(idx[best])
+        skipped = int(candidate.sum()) - int(idx.size)
 
         x[j] = 1
         used += weights[:, j]
         candidate[j] = False
 
         iteration += 1
+        current_profit = float(profits @ x)
         history.append({
             "iteration": iteration,
-            "profit": float(profits @ x),
+            "profit": current_profit,
+            "best_profit": current_profit,
             "item": j,
             "score": float(score[best]),
+            "decision": "select",
+            "skipped": skipped,
         })
 
     # Chot an toan: neu sai so so thuc lam vuot capacity thi bo bot mat hang loi nhuan thap
@@ -83,6 +88,12 @@ def solve(
         if chosen.size == 0 or not np.any(usage > caps):
             break
         x[chosen[np.argmin(profits[chosen])]] = 0
+
+    # Dong bo history voi nghiem cuoi cung (sau buoc chot an toan).
+    final_profit = float(profits @ x)
+    if history:
+        history[-1]["profit"] = final_profit
+        history[-1]["best_profit"] = final_profit
 
     runtime = time.perf_counter() - start
     return build_result(problem, x, runtime=runtime, history=history, status=status)

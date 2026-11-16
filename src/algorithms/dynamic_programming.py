@@ -1,3 +1,26 @@
+"""Dynamic Programming (quy hoach dong) — Thanh vien 2.
+
+Mo hinh:
+- Trang thai sau khi xet j mat hang dau (theo thu tu uu tien) la vector tai
+  nguyen da dung R = (r_1..r_m); gia tri la loi nhuan lon nhat dat duoc.
+- Chuyen trang thai: tu (R, P) sinh (R + w_j, P + p_j) neu khong vuot capacity;
+  giu ca phuong an khong chon. Trang thai trung (cung R) chi giu P lon hon.
+- Khoi tao (R=0, P=0). Truy vet nguoc bang mang parent/took cua tung tang.
+- Cat can: nghiem tham lam + local search lam can duoi; cat nhanh theo can tren
+  (fractional bound tren tung rang buoc); loai mat hang khong bao gio vua.
+
+Do phuc tap:
+- Thoi gian: O(n * S * (m + log S)) voi S la so trang thai khong bi chi phoi.
+- Bo nho: O(S * m) cho tap trang thai + O(n * S) mang truy vet.
+- DP chinh xac nhung S co the bung no theo tich cac capacity; vi vay file nay
+  gioi han bo nho (DEFAULT_MEMORY_LIMIT_MB) va so trang thai (MAX_STATES).
+  Khi vuot gioi han, tra STATUS_TIMEOUT / STATUS_OUT_OF_MEMORY kem nghiem tot
+  nhat hien co — KHONG coi la loi nhuan 0.
+
+history: {step, iteration, phase, item, n_states, n_candidates, n_pruned,
+best_profit, profit, lower_bound, elapsed}.
+"""
+
 import time
 
 import numpy as np
@@ -9,6 +32,9 @@ from src.core.model import MKPProblem, MKPResult
 
 # Gioi han bo nho cho cac mang cua DP (MB). Vuot -> STATUS_OUT_OF_MEMORY.
 DEFAULT_MEMORY_LIMIT_MB = 3000.0
+
+# Tran so trang thai moi tang: chan bung no bo nho va thoi gian.
+MAX_STATES = 2_000_000
 
 _MB = 1024.0 * 1024.0
 _EPS = 1e-9
@@ -117,7 +143,7 @@ def solve(
     record_history: bool = True,
     memory_limit_mb: float = DEFAULT_MEMORY_LIMIT_MB,
     use_bound_pruning: bool = True,
-    return_partial_on_failure: bool = False,
+    return_partial_on_failure: bool = True,
 ) -> MKPResult:
 
     start = time.perf_counter()
@@ -184,6 +210,8 @@ def solve(
         "best_profit": lower_bound, "profit": lower_bound,
         "lower_bound": lower_bound,
         "dense_states": estimate_dense_states(problem),
+        "memory_limit_mb": memory_limit_mb,
+        "max_states": MAX_STATES,
         "elapsed": time.perf_counter() - start,
     })
 
@@ -197,13 +225,16 @@ def solve(
         1, 2**62, size=m, dtype=np.int64
     ) | 1
     status = STATUS_OK
+    exhausted = False
+    pending_layer = None
 
-    def traceback(layer_count: int, state_index: int) -> np.ndarray:
+    def traceback(layer_count: int, state_index: int, layer_list=None) -> np.ndarray:
 
         x = np.zeros(n, dtype=np.int8)
         s = state_index
+        source = layers if layer_list is None else layer_list
         for j in range(layer_count - 1, -1, -1):
-            parent, took = layers[j]
+            parent, took = source[j]
             if took[s]:
                 x[order[j]] = 1
             s = int(parent[s])
@@ -211,15 +242,16 @@ def solve(
 
     def partial_solution() -> np.ndarray:
 
-        best_x = warm_x
-        if layers and len(states_p):
+        source = layers + ([pending_layer] if pending_layer is not None else [])
+        if source and len(states_p):
             idx = int(np.argmax(states_p))
             if states_p[idx] > warm_val:
-                best_x = traceback(len(layers), idx)
-        return best_x
+                return traceback(len(source), idx, source)
+        return warm_x
 
     try:
         for j in range(n_used):
+            pending_layer = None
             if time.perf_counter() >= deadline:
                 status = STATUS_TIMEOUT
                 break
@@ -238,6 +270,15 @@ def solve(
             cand_u = cand_u[feasible_idx]
             cand_p = states_p[feasible_idx] + p_pos[j]
             K = len(feasible_idx)
+
+            if time.perf_counter() >= deadline:
+                status = STATUS_TIMEOUT
+                break
+
+            # Chan bung no so trang thai: gioi han ca bo nho lan thoi gian.
+            if S + K > MAX_STATES:
+                status = STATUS_OUT_OF_MEMORY
+                break
 
        
             all_u = np.concatenate((states_u, cand_u), axis=0)
@@ -265,6 +306,7 @@ def solve(
             states_p = all_p[kept]
             parent = all_parent[kept]
             took = all_took[kept]
+            pending_layer = (parent, took)
 
             if time.perf_counter() >= deadline:
                 status = STATUS_TIMEOUT
@@ -286,8 +328,17 @@ def solve(
                     states_p = states_p[alive]
                     parent = parent[alive]
                     took = took[alive]
+                    pending_layer = (parent, took)
+                    if states_u.shape[0] == 0:
+                        exhausted = True
+                        break
 
-            layers.append((parent, took))
+            if time.perf_counter() >= deadline:
+                status = STATUS_TIMEOUT
+                break
+
+            layers.append(pending_layer)
+            pending_layer = None
             stored_bytes += parent.nbytes + took.nbytes
             peak_bytes = max(
                 peak_bytes, stored_bytes + states_u.nbytes + states_p.nbytes
@@ -309,15 +360,32 @@ def solve(
     runtime = time.perf_counter() - start
     peak_mb = peak_bytes / _MB
 
+    if exhausted:
+        log({
+            "step": len(history), "iteration": len(history), "phase": "exhausted",
+            "best_profit": float(warm_val), "profit": float(warm_val),
+            "lower_bound": float(lower_bound), "elapsed": runtime,
+        })
+        result = build_result(
+            problem, warm_x, runtime=runtime, history=history, status=STATUS_OK
+        )
+        result.peak_memory = peak_mb
+        return result
 
     if status != STATUS_OK:
+        partial_x = partial_solution() if return_partial_on_failure else None
+        failed_profit = (
+            float(profits @ partial_x)
+            if partial_x is not None
+            else float(lower_bound)
+        )
         log({
             "step": len(history), "iteration": len(history), "phase": "failed",
-            "status": status, "best_profit": float(lower_bound),
-            "profit": float(lower_bound), "lower_bound": float(lower_bound),
+            "status": status, "best_profit": failed_profit,
+            "profit": failed_profit, "lower_bound": float(lower_bound),
+            "peak_memory_mb": peak_mb,
             "elapsed": runtime,
         })
-        partial_x = partial_solution() if return_partial_on_failure else None
         return _failure_result(
             problem, runtime=runtime, history=history, status=status,
             peak_mb=peak_mb, partial_x=partial_x,
@@ -325,10 +393,11 @@ def solve(
 
 
     best_x, best_val = warm_x, warm_val
-    final_idx = int(np.argmax(states_p))
-    if states_p[final_idx] > warm_val + _EPS:
-        best_x = traceback(n_used, final_idx)
-        best_val = float(states_p[final_idx])
+    if states_p.size:
+        final_idx = int(np.argmax(states_p))
+        if states_p[final_idx] > warm_val + _EPS:
+            best_x = traceback(n_used, final_idx)
+            best_val = float(states_p[final_idx])
 
     if record_history:
         step = len(history)

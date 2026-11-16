@@ -9,8 +9,16 @@ Quy tac:
 - Nhan keyword-only: time_limit (giay), seed (int, mac dinh 0).
 - Tra ve MKPResult — dung build_result() de tinh profit/gap/feasible.
 - Neu het time_limit: dung som, status=STATUS_TIMEOUT (tu src.core.config).
-- Nghi duong: vector 0/1 do dai problem.n — truyen x vao build_result.
-- history (tuy chon): list dict de ve do thuat toan, moi phan tu {"iteration": int, "profit": float}.
+- Neu thuat toan bi gioi han bo nho (DP): status=STATUS_OUT_OF_MEMORY.
+  Khong duoc coi lan chay dung som la loi nhuan 0; phai tra nghiem tot nhat
+  hien co (kha thi) kem status tuong ung.
+- Nghiem duong: vector 0/1 do dai problem.n — truyen x vao build_result.
+- history: list dict de ve/mo phong, bat buoc moi phan tu co:
+      {"iteration": int, "profit": float}
+  trong do profit la loi nhuan TOT NHAT tinh den buoc do (khong giam), va
+  phan tu cuoi cung phai khop voi nghiem tra ve (profit == total_profit).
+  Moi thuat toan duoc phep ghi them truong rieng (xem docstring tung file),
+  mien giu du 2 truong bat buoc tren.
 - Khong doc file du lieu trong solve — nhan problem da load san.
 
 Chay: python -m pytest tests/  (tu goc repo)
