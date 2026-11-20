@@ -48,4 +48,5 @@ class MKPResult:
             "optimality_gap": self.optimality_gap,
             "history": self.history,
             "status": self.status,
+            "peak_memory": self.peak_memory,
         }      

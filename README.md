@@ -19,13 +19,28 @@
 | Kiểm tra nghiệm hợp lệ | ✅ Xong | `src/core/validator.py` |
 | Hằng số chung (benchmark, seed, status) | ✅ Xong | `src/core/config.py` |
 | Quy ước interface 4 thuật toán | ✅ Xong | `src/algorithms/__init__.py` |
-| Test tự kiểm (31 test) | ✅ Xong — `31 passed` | `tests/` |
-| **4 thuật toán** | ❌ **Chưa code — đợi 4 thành viên** | `src/algorithms/*.py` |
-| Chạy benchmark / so sánh | ❌ Chưa code | `src/experiments/` |
-| Giao diện PySide6 | ❌ Chưa code | `src/gui/` |
-| Điểm vào chương trình | ❌ Chưa code | `main.py` |
+| **4 thuật toán** (Greedy, DP, GA, SA) | ✅ Xong | `src/algorithms/*.py` |
+| Chạy benchmark / so sánh (CLI, session) | ✅ Xong | `src/experiments/` |
+| **Giao diện PySide6** (4 trang, session, xuất) | ✅ Xong | `src/gui/` |
+| Điểm vào GUI | ✅ `python -m src.gui.main` | `src/gui/main.py` |
+| Test tự kiểm | ✅ Xong — `127 passed` | `tests/` |
 
-**Tóm lại:** phần nền (core + quy ước + test) đã chắc. Việc còn lại là **code 4 thuật toán** (mỗi người 1 file), rồi mới đến experiments và GUI.
+**Tóm lại:** đồ án đã hoàn thành đủ 4 thuật toán, CLI experiments và GUI PySide6. Chạy `python -m src.gui.main` để dùng giao diện.
+
+### 1.1. Chạy giao diện desktop
+
+```bash
+pip install -r requirements.txt
+python -m src.gui.main
+```
+
+- 4 trang: **Home / Dataset / Algorithm / Comparison**; `Ctrl+1..4` chuyển trang.
+- **Dataset**: chọn 1 bài xem `p_j/r_ij/b_i`, hoặc **(tất cả bài trong file)** để xem bảng tổng hợp (tên, n, m, z_ref, tổng lợi nhuận, độ chặt) rồi chạy hàng loạt.
+- **Algorithm**: Run 1 thuật toán, Run All 4 thuật toán (hoặc 4 × mọi bài khi chọn "tất cả"), Reset; xem kết quả và đường hội tụ.
+- **Comparison**: Run Session (N = 1/3/5/10 seed cho GA/SA), bảng + biểu đồ + nhận xét tự động; khi Dataset chọn "tất cả" thì chạy từng bài và lưu từng phiên vào `results/gui_sessions/`.
+- **Xuất**: CSV/JSON/PNG/HTML; PDF tùy chọn.
+- `Ctrl+R` chạy thao tác chính của trang; `Esc` dừng phát lại biểu đồ.
+- Test GUI: `python -m pytest tests/test_gui_analytics.py tests/test_gui_session_store.py tests/test_gui_smoke.py -v`
 
 ---
 
@@ -39,7 +54,7 @@ cd MKP-BIG4
 # 2. Cài dependency
 pip install -r requirements.txt
 
-# 3. Chạy test — BẮT BUỘC thấy "31 passed" trước khi code gì
+# 3. Chạy test — BẮT BUỘC thấy "127 passed"
 python -m pytest tests/
 ```
 
@@ -159,6 +174,8 @@ find_violations(problem, x)    # danh sách ràng buộc đang bị vi phạm
 
 ## 5. HỢP ĐỒNG ALGORITHM — bắt buộc cho 4 thành viên
 
+> Hướng dẫn chi tiết theo buổi học cho TV1/TV2: [`docs/HUONG_DAN_THANH_VIEN.md`](docs/HUONG_DAN_THANH_VIEN.md)
+
 ### 5.1. Ai làm file nào
 
 | Thành viên | File cần sửa | Thuật toán |
@@ -240,7 +257,7 @@ Mỗi file stub còn có **gợi ý riêng** trong docstring đầu file (ví d�
 ```bash
 # 0. Clone + cài + test (1 lần)
 pip install -r requirements.txt
-python -m pytest tests/          # phải "31 passed"
+python -m pytest tests/          # phải "127 passed"
 
 # 1. Code trong file của mình
 #    src/algorithms/greedy.py    (ví dụ thành viên 1)
@@ -283,13 +300,15 @@ def test_greedy_mknap1():
 
 ---
 
-## 6. Sau khi có đủ 4 thuật toán (phần chung — ai nhận làm experiments)
+## 6. Experiments và GUI (đã hoàn thành)
 
-1. **`src/experiments/`** — duyệt `BENCHMARK_PROBLEMS`, gọi `get_solver(tên)(problem, …)`, lưu `results/`
-2. **`main.py`** — điểm vào chạy CLI/GUI
-3. **`src/gui/`** — PySide6: trang chọn dataset, chạy thuật toán, vẽ biểu đồ so sánh
+1. **`src/experiments/`** — chạy benchmark, session và so sánh 4 thuật toán:
+   `python -m src.experiments <algo> <dataset> <bai> -t 30 -s 1 [--session ten]`
+2. **`python -m src.experiments.comparison`** — sinh CSV/PNG/report từ kết quả.
+3. **`src/gui/`** — giao diện PySide6: Dataset, Run/Run All, Comparison Session,
+   lưu lịch sử và xuất CSV/JSON/PNG/HTML (xem mục 1.1).
 
-Những phần này **không** thuộc phạm vi 4 thành viên algorithm, chỉ bắt đầu khi 4 file `solve()` đã xong và `pytest` xanh toàn bộ.
+Điểm vào GUI chính thức là `python -m src.gui.main`; `main.py` ở thư mục gốc để trống.
 
 ---
 
@@ -326,7 +345,11 @@ python -m pytest tests/test_contract.py -v   # chỉ check chữ ký 4 thuật t
 python -m pytest tests/test_core.py -v       # chỉ check core
 ```
 
-- `tests/test_core.py` — 18 test: model, evaluator, validator, data_loader, benchmark có `z_ref`
-- `tests/test_contract.py` — 13 test: 4 file algorithm có `solve()` đúng chữ ký
+- `tests/test_core.py` — model, evaluator, validator, data_loader, benchmark có `z_ref`
+- `tests/test_contract.py` — 4 file algorithm có `solve()` đúng chữ ký
+- `tests/test_greedy.py`, `test_dp.py`, `test_ga.py`, `test_sa.py`, `test_comparison.py`, `test_experiments.py` — thuật toán và experiments
+- `tests/test_gui_analytics.py` — thống kê, seeds, history, nhận xét tự động (không cần Qt)
+- `tests/test_gui_session_store.py` — lưu/đọc/xóa/xuất phiên, JSON numpy, ghi atomic
+- `tests/test_gui_smoke.py` — Qt offscreen: 4 trang, Dataset, thread Run, worker
 
-Sau khi bạn code xong, số test sẽ tăng thêm (test riêng của từng người).
+Tổng hiện tại: **127 passed**.
