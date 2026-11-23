@@ -237,6 +237,7 @@ def build_rows(records: dict[str, list[dict]], num_seeds: int) -> list[dict]:
                 "status": stats["status"],
                 "selected_count": stats["selected_count"],
                 "peak_memory": stats["peak_memory"] if stats["peak_memory"] > 0 else None,
+                "count": stats["count"],
                 "runs": runs,
                 "stats": stats,
                 "best_run": stats["best_run"],
@@ -390,6 +391,13 @@ def comments(rows: list[dict], params: dict) -> list[str]:
                 f"Nhóm dùng gần hết thời gian: {limited_text}; không tuyên bố "
                 "nhanh/chậm dựa trên runtime của nhóm này."
             )
+
+    if any(row["algorithm"] not in STOCHASTIC for row in available):
+        result.append(
+            "Greedy/DP tất định nên chỉ chạy 1 lần; so sánh chất lượng dựa trên "
+            "Profit và Gap best, còn Avg/Worst/Std/Gap avg chỉ áp dụng cho "
+            "GA/SA khi N > 1."
+        )
 
     profits = [(row, float(row["profit"])) for row in available]
     profits.sort(key=lambda item: item[1], reverse=True)

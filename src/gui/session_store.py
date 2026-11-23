@@ -27,6 +27,7 @@ SAFE_NAME = re.compile(r"[^A-Za-z0-9_-]+")
 
 CSV_HEADERS = (
     "Thuật toán",
+    "Số seed (N)",
     "Profit",
     "Avg",
     "Worst",
@@ -36,7 +37,7 @@ CSV_HEADERS = (
     "Runtime (s)",
     "Feasible",
     "Status",
-    "Chọn",
+    "Số vật phẩm",
     "Bộ nhớ đỉnh (MB)",
 )
 
@@ -271,6 +272,7 @@ def export_csv(session: dict, path) -> Path:
             writer.writerow(
                 [
                     row["label"],
+                    "-" if row.get("count") is None else row["count"],
                     _csv_value(row["profit"], 0),
                     _csv_value(row["avg"], 0),
                     _csv_value(row["worst"], 0),
@@ -337,6 +339,7 @@ def render_html(session: dict, png_bytes: bytes | None = None) -> str:
     for row in rows:
         cells = [
             row["label"],
+            "-" if row.get("count") is None else row["count"],
             _display(row["profit"], 0),
             _display(row["avg"], 0),
             _display(row["worst"], 0),

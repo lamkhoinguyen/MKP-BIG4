@@ -5,11 +5,13 @@ from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QSlider,
     QSpinBox,
     QSplitter,
@@ -188,9 +190,18 @@ class AlgorithmPage(QWidget):
         holder = QSplitter(Qt.Horizontal)
         holder.setChildrenCollapsible(False)
         self.details = SingleResultDetails()
+        details_scroll = QScrollArea()
+        details_scroll.setObjectName("DetailsScroll")
+        details_scroll.setWidget(self.details)
+        details_scroll.setWidgetResizable(True)
+        details_scroll.setFrameShape(QFrame.NoFrame)
+        details_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        details_scroll.viewport().setObjectName("DetailsViewport")
+        details_scroll.viewport().setAutoFillBackground(False)
+        self.details_scroll = details_scroll
         self.chart_single = ChartWidget()
         self.chart_single.show_placeholder("Bấm Run để xem đường hội tụ")
-        holder.addWidget(self.details)
+        holder.addWidget(details_scroll)
         holder.addWidget(self.chart_single)
         holder.setStretchFactor(0, 2)
         holder.setStretchFactor(1, 3)

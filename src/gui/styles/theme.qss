@@ -125,6 +125,44 @@ QLabel#StatusProblem {
 }
 
 /* ---- Thẻ nội dung và các trang GĐ7 ---- */
+QWidget#DetailsPanel {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+QScrollArea#DetailsScroll,
+QWidget#DetailsViewport {
+    background: transparent;
+    border: none;
+}
+
+QScrollArea#DetailsScroll QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 0;
+}
+
+QScrollArea#DetailsScroll QScrollBar::handle:vertical {
+    background: #cbd5e1;
+    border-radius: 5px;
+    min-height: 28px;
+}
+
+QScrollArea#DetailsScroll QScrollBar::handle:vertical:hover {
+    background: #94a3b8;
+}
+
+QScrollArea#DetailsScroll QScrollBar::add-line:vertical,
+QScrollArea#DetailsScroll QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+QScrollArea#DetailsScroll QScrollBar::add-page:vertical,
+QScrollArea#DetailsScroll QScrollBar::sub-page:vertical {
+    background: transparent;
+}
+
 QFrame#Card {
     background: #ffffff;
     border: 1px solid #e2e8f0;

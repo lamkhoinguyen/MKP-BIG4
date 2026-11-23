@@ -20,6 +20,7 @@ from src.gui.widgets.data_table import ArrayTableModel, make_table_view
 
 RESULT_HEADERS = (
     "Thuật toán",
+    "Số seed (N)",
     "Profit",
     "Avg",
     "Worst",
@@ -29,8 +30,31 @@ RESULT_HEADERS = (
     "Runtime (s)",
     "Feasible",
     "Status",
-    "Chọn",
+    "Số vật phẩm",
     "Bộ nhớ đỉnh (MB)",
+)
+
+COL_COUNT = 1
+COL_AVG = 3
+COL_WORST = 4
+COL_STD = 5
+COL_GAP_AVG = 7
+COL_MEMORY = 12
+STABILITY_COLUMNS = {COL_AVG, COL_WORST, COL_STD, COL_GAP_AVG}
+
+HEADER_TOOLTIPS = {
+    COL_COUNT: "Số lần chạy thật: Greedy/DP = 1 (tất định), GA/SA = N seed đã chọn.",
+    COL_AVG: "Chỉ áp dụng cho GA/SA khi N > 1; Greedy/DP tất định nên không có.",
+    COL_WORST: "Chỉ áp dụng cho GA/SA khi N > 1; Greedy/DP tất định nên không có.",
+    COL_STD: "Độ lệch chuẩn giữa các seed; chỉ GA/SA khi N > 1.",
+    COL_GAP_AVG: "Gap trung bình giữa các seed; chỉ GA/SA khi N > 1.",
+    COL_MEMORY: "Chỉ DP báo cáo bộ nhớ đỉnh; thuật toán khác không đo.",
+}
+
+TABLE_HINT = (
+    "Chất lượng & hiệu năng (cả 4 thuật toán): Profit, Gap best, Runtime, "
+    "Feasible, Status. Độ ổn định (chỉ GA/SA khi N > 1): Avg, Worst, Std, "
+    "Gap avg. Greedy/DP tất định nên chỉ chạy 1 lần — ô “-” không phải thiếu kết quả."
 )
 
 
@@ -41,6 +65,7 @@ def _gap_percent(value) -> str:
 def _display_row(row: dict) -> list[str]:
     return [
         row.get("label", "-"),
+        "-" if row.get("count") is None else str(row["count"]),
         analytics.fmt_number(row.get("profit"), 0),
         analytics.fmt_number(row.get("avg"), 0),
         analytics.fmt_number(row.get("worst"), 0),
@@ -85,9 +110,24 @@ class ResultTableModel(QAbstractTableModel):
             if index.column() == 0:
                 return int(Qt.AlignLeft | Qt.AlignVCenter)
             return int(Qt.AlignRight | Qt.AlignVCenter)
+        if role == Qt.ToolTipRole:
+            row = self._rows[index.row()]
+            column = index.column()
+            if column in STABILITY_COLUMNS and not row.get("stochastic"):
+                return (
+                    "Greedy/DP là thuật toán tất định: chỉ chạy 1 lần nên "
+                    "không có Avg/Worst/Std/Gap avg."
+                )
+            if column == COL_MEMORY and row.get("peak_memory") is None:
+                return "Chỉ DP báo cáo bộ nhớ đỉnh; thuật toán này không đo."
+            if column == COL_COUNT:
+                return HEADER_TOOLTIPS[COL_COUNT]
         return None
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):  # noqa: N802
+        if orientation == Qt.Horizontal and section in HEADER_TOOLTIPS:
+            if role == Qt.ToolTipRole:
+                return HEADER_TOOLTIPS[section]
         if role != Qt.DisplayRole:
             return None
         if orientation == Qt.Horizontal and 0 <= section < len(RESULT_HEADERS):
@@ -114,6 +154,11 @@ class ResultTable(QWidget):
             caption.setObjectName("CardTitle")
             layout.addWidget(caption)
 
+        self.hint = QLabel(TABLE_HINT)
+        self.hint.setObjectName("FieldNote")
+        self.hint.setWordWrap(True)
+        layout.addWidget(self.hint)
+
         self.model = ResultTableModel()
         self.view = QTableView()
         self.view.setModel(self.model)
@@ -121,6 +166,7 @@ class ResultTable(QWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.view.verticalHeader().setVisible(False)
+        self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.view.horizontalHeader().setStretchLastSection(True)
 
         self.empty_label = QLabel(empty_text)
@@ -136,6 +182,8 @@ class ResultTable(QWidget):
 
     def set_rows(self, rows: list[dict]) -> None:
         self.model.set_rows(rows)
+        has_memory = any(row.get("peak_memory") is not None for row in rows)
+        self.view.setColumnHidden(COL_MEMORY, not has_memory)
         self.stack.setCurrentWidget(self.view if rows else self.empty_label)
 
     def clear(self) -> None:
@@ -158,6 +206,7 @@ class SingleResultDetails(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setObjectName("DetailsPanel")
         self._problem = None
 
         layout = QVBoxLayout(self)
