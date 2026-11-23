@@ -1,0 +1,280 @@
+
+=== PAGE 1 --- Đề tài: Bài toán chọn hàng vận chuyển – Multidimensional Knapsack Problem (MKP) 
+I. THÔNG TIN CHUNG CỦA DỰ ÁN 1. Mục tiêu dự án Xây dựng chương trình giải quyết bài toán chọn hàng vận chuyển bằng mô hình Multidimensional Knapsack Problem (MKP). Chương trình sử dụng 4 thuật toán để tìm kiếm phương án chọn hàng tối ưu hoặc gần tối ưu, bao gồm: 1. Greedy (Tham lam). 2. Dynamic Programming (Quy hoạch động). 3. Genetic Algorithm (Thuật toán di truyền). 4. Simulated Annealing (Mô phỏng luyện kim). Sau khi triển khai, nhóm sẽ đánh giá và so sánh chất lượng lời giải, thời gian thực hiện và khả năng xử lý dữ liệu của 4 thuật toán trên cùng một bộ dữ liệu. 2. Công nghệ sử dụng 
+● Ngôn ngữ lập trình: Python. 
+● Giao diện: PySide6. 
+● Nguồn dữ liệu: OR-Library – bộ dữ liệu Multidimensional Knapsack Problem. 
+● Phương pháp lập trình: Ưu tiên triển khai thuật toán From Scratch. 
+● Công cụ quản lý mã nguồn: Git/GitHub (nếu nhóm sử dụng). 3. Các thuật toán được phân công Thành viên Thuật toán phụ trách Thành viên 1 Greedy 
+=== PAGE 2 --- Thành viên 2 Dynamic Programming Thành viên 3 Genetic Algorithm Thành viên 4 Simulated Annealing 
+I
+I. WORKFLOW THỰC HIỆN CHI TIẾT 
+GIAI ĐOẠN 1. TÌM HIỂU VÀ XÁC ĐỊNH BÀI TOÁN 1.1. Nhiệm vụ 
+● Tìm hiểu bài toán chọn hàng vận chuyển. 
+● Xác định mục tiêu cần giải quyết. 
+● Tìm hiểu khái niệm Multidimensional Knapsack Problem (MKP). 
+● Xác định các thành phần của bài toán: hàng hóa, lợi nhuận, tài nguyên tiêu thụ và giới hạn tài nguyên. 
+● Thống nhất một mô hình toán học chung để cả 4 thuật toán sử dụng. 1.2. Mô hình toán học chung Hàm mục tiêu: max 𝑍 = 𝑗 = 1 𝑛 ∑ 𝑝 𝑗 𝑥 𝑗 Các ràng buộc: 𝑗 = 1 𝑛 ∑ 𝑟 𝑖𝑗 𝑥 𝑗 ≤ 𝑏 𝑖 , 𝑖 = 1 , ... , 𝑚 
+=== PAGE 3 --- 𝑥 𝑗 ∈ { 0 , 1 } Trong đó: 
+● : Tổng số mặt hàng. 𝑛 
+● : Số lượng tài nguyên hoặc ràng buộc. 𝑚 
+● : Lợi nhuận của mặt hàng thứ . 𝑝 𝑗 𝑗 
+● : Lượng tài nguyên thứ mà mặt hàng sử dụng. 𝑟 𝑖𝑗 𝑖 𝑗 
+● : Giới hạn tài nguyên thứ . 𝑏 𝑖 𝑖 
+● : Chọn mặt hàng thứ . 𝑥 𝑗 = 1 𝑗 
+● : Không chọn mặt hàng thứ . 𝑥 𝑗 = 0 𝑗 
+● : Tổng lợi nhuận thu được. 𝑍 1.3. Kết quả cần hoàn thành 
+● Hiểu rõ bài toán MKP. 
+● Có mô hình toán học thống nhất. 
+● Xác định rõ đầu vào và đầu ra của bài toán. 
+● Có ví dụ nhỏ để kiểm tra cách hoạt động của mô hình. 
+GIAI ĐOẠN 2. TÌM KIẾM VÀ XỬ LÝ DATASET 2.1. Nhiệm vụ 
+● Sử dụng bộ dữ liệu MKP từ OR-Library. 
+● Tải 11 file dữ liệu đã lựa chọn. 
+● Lưu dữ liệu vào thư mục data/mknap/ . 
+● Tìm hiểu cấu trúc dữ liệu bên trong từng file. 
+● Xác định cách đọc và tách các bài toán trong file. 
+● Kiểm tra tính hợp lệ của dữ liệu sau khi đọc. 2.2. Cấu trúc dữ liệu cần đọc Mỗi bài toán trong file dữ liệu OR-Library có các thành phần: 1. Thông tin đầu bài: ○ Số lượng mặt hàng . 𝑛 
+=== PAGE 4 --- ○ Số lượng ràng buộc . 𝑚 ○ Giá trị tối ưu tham chiếu Z_ref, nếu có. 2. Danh sách lợi nhuận của các mặt hàng. 3. Ma trận tài nguyên tiêu thụ: ○ Gồm hàng. 𝑚 ○ Mỗi hàng có giá trị. 𝑛 4. Danh sách giới hạn tài nguyên. 2.3. Cách sử dụng dataset 
+● Không gộp tất cả dữ liệu thành một bài toán lớn. 
+● Mỗi bài toán nằm trong file được xem là một trường hợp kiểm thử độc lập. 
+● Cả 4 thuật toán phải chạy trên cùng một bài toán để đảm bảo tính công bằng khi so sánh. 
+● Các trường hợp có kích thước lớn cần được kiểm tra giới hạn thời gian và bộ nhớ. 2.4. Kết quả cần hoàn thành 
+● Có đầy đủ 11 file dữ liệu trong thư mục. 
+● Hiểu cấu trúc dữ liệu. 
+● Xây dựng được chương trình đọc dữ liệu. 
+● Có thể chọn một file và một bài toán cụ thể để đưa vào chương trình. 
+● Kiểm tra được số lượng mặt hàng, số ràng buộc, lợi nhuận và giới hạn tài nguyên. 
+GIAI ĐOẠN 3. NGHIÊN CỨU VÀ PHÂN TÍCH 4 THUẬT TOÁN Mỗi thành viên chịu trách nhiệm nghiên cứu một thuật toán. Các thành viên cần trình bày thuật toán theo cùng một cấu trúc để thuận tiện cho việc tổng hợp và so sánh. 3.1. Thuật toán Greedy – Thành viên 1 Nội dung cần thực hiện: 
+● Giới thiệu khái niệm và nguyên lý hoạt động. 
+● Xác định tiêu chí ưu tiên chọn mặt hàng. 
+● Xây dựng các bước thực hiện thuật toán. 
+=== PAGE 5 --- 
+● Áp dụng thuật toán vào bài toán MKP. 
+● Phân tích độ phức tạp thời gian. 
+● Đánh giá ưu điểm và nhược điểm. 
+● Xác định trường hợp thuật toán có thể cho kết quả chưa tối ưu. Lưu ý: Với MKP có nhiều ràng buộc, cần xác định rõ cách tính điểm ưu tiên cho mặt hàng. Không mặc định chỉ sử dụng lợi nhuận chia cho một loại tài nguyên. 3.2. Thuật toán Dynamic Programming – Thành viên 2 Nội dung cần thực hiện: 
+● Giới thiệu khái niệm và nguyên lý quy hoạch động. 
+● Xác định trạng thái của bài toán. 
+● Xây dựng công thức chuyển trạng thái. 
+● Xác định điều kiện khởi tạo. 
+● Trình bày cách tìm lại danh sách mặt hàng được chọn. 
+● Phân tích độ phức tạp thời gian và bộ nhớ. 
+● Đánh giá ưu điểm và nhược điểm. Lưu ý: DP trên bài toán MKP có thể cần lượng bộ nhớ và thời gian rất lớn khi số chiều tài nguyên hoặc giới hạn tài nguyên tăng. Cần kiểm tra khả năng xử lý thực tế, không mặc định DP chạy được với mọi bộ dữ liệu. 3.3. Thuật toán Genetic Algorithm – Thành viên 3 Nội dung cần thực hiện: 
+● Giới thiệu nguyên lý thuật toán di truyền. 
+● Xây dựng cách biểu diễn nghiệm bằng chuỗi nhị phân. 
+● Khởi tạo quần thể ban đầu. 
+● Xây dựng hàm đánh giá nghiệm (Fitness). 
+● Xử lý các nghiệm vi phạm ràng buộc. 
+● Xây dựng phương pháp chọn lọc. 
+● Xây dựng phép lai ghép (Crossover). 
+● Xây dựng phép đột biến (Mutation). 
+● Xác định điều kiện dừng. 
+● Đánh giá ưu điểm và nhược điểm. 
+=== PAGE 6 --- None 3.4. Thuật toán Simulated Annealing – Thành viên 4 Nội dung cần thực hiện: 
+● Giới thiệu nguyên lý mô phỏng luyện kim. 
+● Xây dựng nghiệm ban đầu. 
+● Xây dựng phương pháp tạo nghiệm lân cận. 
+● Xây dựng cách đánh giá nghiệm. 
+● Xây dựng quy tắc chấp nhận nghiệm mới. 
+● Thiết lập nhiệt độ ban đầu và tốc độ giảm nhiệt. 
+● Xác định điều kiện dừng. 
+● Đánh giá ưu điểm và nhược điểm. 3.5. Kết quả cần hoàn thành Mỗi thành viên phải có: 
+● Phần lý thuyết về thuật toán. 
+● Sơ đồ hoặc các bước hoạt động. 
+● Công thức và cách áp dụng vào MKP. 
+● Phân tích độ phức tạp. 
+● Ưu điểm và nhược điểm. 
+● Mã nguồn thuật toán. 
+● Kết quả kiểm thử ban đầu. 
+GIAI ĐOẠN 4. THIẾT KẾ CẤU TRÚC CHƯƠNG TRÌNH 4.1. Nhiệm vụ 
+● Tạo dự án Python theo cấu trúc thư mục đã thống nhất. 
+● Phân chia các module theo chức năng. 
+● Xây dựng mô hình dữ liệu chung. 
+● Xây dựng các hàm đánh giá và kiểm tra nghiệm. 
+● Thống nhất cách nhận dữ liệu và trả kết quả giữa các thuật toán. 4.2. Cấu trúc thư mục dự án MKP_Project/ │ 
+=== PAGE 7 --- ├── main.py ├── requirements.txt ├── README.md ├── .gitignore │ ├── data/ │ └── mknap/ │ ├── mknap1.txt │ ├── mknap2.txt │ └── ... │ ├── src/ │ ├── __init__.py │ │ │ ├── core/ │ │ ├── __init__.py │ │ ├── model.py │ │ ├── data_loader.py │ │ ├── evaluator.py │ │ └── validator.py │ │ │ ├── algorithms/ │ │ ├── __init__.py │ │ ├── greedy.py │ │ ├── dynamic_programming.py │ │ ├── genetic_algorithm.py │ │ └── simulated_annealing.py │ │ │ ├── experiments/ │ │ ├── __init__.py │ │ ├── experiment_runner.py │ │ ├── comparison.py │ │ └── metrics.py │ │ │ └── gui/ 
+=== PAGE 8 --- │ ├── __init__.py │ ├── main_window.py │ ├── styles.py │ │ │ ├── pages/ │ │ ├── __init__.py │ │ ├── home_page.py │ │ ├── dataset_page.py │ │ ├── algorithm_page.py │ │ └── comparison_page.py │ │ │ ├── widgets/ │ │ ├── __init__.py │ │ ├── sidebar.py │ │ ├── control_panel.py │ │ ├── result_panel.py │ │ ├── analysis_panel.py │ │ ├── data_table.py │ │ └── chart_widget.py │ │ │ └── workers/ │ ├── __init__.py │ └── algorithm_worker.py │ ├── results/ │ ├── individual/ │ ├── comparisons/ │ ├── charts/ │ └── reports/ │ ├── tests/ │ ├── test_data_loader.py │ ├── test_validator.py │ ├── test_greedy.py │ ├── test_dp.py 
+=== PAGE 9 --- │ ├── test_ga.py │ ├── test_sa.py │ └── test_comparison.py │ └── assets/ ├── icons/ └── images/ 4.3. Chức năng các module chính Nhóm core: 
+● model.py : Lưu trữ thông tin của một bài toán MKP. 
+● data_loader.py : Đọc và xử lý dữ liệu từ OR-Library. 
+● evaluator.py : Tính tổng lợi nhuận và lượng tài nguyên đã sử dụng. 
+● validator.py : Kiểm tra nghiệm có thỏa mãn tất cả ràng buộc hay không. Nhóm algorithms: 
+● greedy.py : Cài đặt thuật toán Greedy. 
+● dynamic_programming.py : Cài đặt thuật toán DP. 
+● genetic_algorithm.py : Cài đặt thuật toán GA. 
+● simulated_annealing.py : Cài đặt thuật toán SA. Nhóm experiments: 
+● experiment_runner.py : Tổ chức chạy các thuật toán trên dữ liệu. 
+● comparison.py : Tổng hợp và so sánh kết quả. 
+● metrics.py : Tính các chỉ số đánh giá. Nhóm gui: 
+● main_window.py : Xây dựng cửa sổ chính. 
+● dataset_page.py : Chọn và xem dữ liệu. 
+● algorithm_page.py : Chạy và theo dõi từng thuật toán. 
+● comparison_page.py : Hiển thị kết quả so sánh. 
+● widgets/ : Chứa các thành phần giao diện. 
+=== PAGE 10 --- 
+● workers/algorithm_worker.py : Chạy thuật toán ở luồng riêng để tránh giao diện bị treo. 4.4. Kết quả cần hoàn thành 
+● Tạo đầy đủ cấu trúc thư mục. 
+● Các thành viên thống nhất cách tổ chức mã nguồn. 
+● Thống nhất mô hình dữ liệu đầu vào. 
+● Thống nhất cấu trúc kết quả đầu ra của 4 thuật toán. 
+GIAI ĐOẠN 5. XÂY DỰNG CÁC THUẬT TOÁN FROM SCRATCH 5.1. Nhiệm vụ chung Mỗi thành viên tự triển khai thuật toán được phân công bằng Python. Các thuật toán phải sử dụng chung: 
+● Mô hình MKP. 
+● Bộ dữ liệu đầu vào. 
+● Hàm tính lợi nhuận. 
+● Hàm kiểm tra ràng buộc. 
+● Cách trả kết quả. 5.2. Quy trình triển khai Bước 1: Tiếp nhận dữ liệu Nhận thông tin bài toán MKP từ model.py . Bước 2: Thực hiện thuật toán Triển khai logic của thuật toán theo phương pháp đã nghiên cứu. Bước 3: Kiểm tra nghiệm Sử dụng validator.py để kiểm tra nghiệm có vi phạm ràng buộc hay không. Bước 4: Đánh giá nghiệm Sử dụng evaluator.py để tính tổng lợi nhuận và lượng tài nguyên sử dụng. Bước 5: Trả kết quả 
+=== PAGE 11 --- None Các thuật toán phải trả kết quả theo một cấu trúc thống nhất, ví dụ: { "selected_items": [1, 3, 5], "total_profit": 250, "resource_usage": [8, 7], "feasible": True, "runtime": 0.025, "optimality_gap": 2.5, "history": [] } Trong đó: 
+● selected_items : Danh sách mặt hàng được chọn. 
+● total_profit : Tổng lợi nhuận. 
+● resource_usage : Lượng tài nguyên đã sử dụng. 
+● feasible : Nghiệm có thỏa mãn ràng buộc hay không. 
+● runtime : Thời gian thực thi. 
+● optimality_gap : Khoảng cách so với giá trị tối ưu tham chiếu, nếu có thể tính. 
+● history : Lịch sử các bước thực hiện để phục vụ mô phỏng. 5.3. Yêu cầu riêng đối với từng thuật toán 
+● Greedy: Lưu lại mặt hàng đang xét, điểm ưu tiên và quyết định chọn hoặc bỏ. 
+● DP: Lưu lại thông tin trạng thái và quá trình cập nhật giá trị; cần kiểm soát bộ nhớ. 
+● GA: Lưu lại thế hệ hiện tại, nghiệm tốt nhất và giá trị Fitness. 
+● SA: Lưu lại nghiệm hiện tại, nghiệm lân cận, nhiệt độ và quyết định chấp nhận nghiệm. 5.4. Kết quả cần hoàn thành 
+● Hoàn thành 4 file thuật toán. 
+● Chạy độc lập từng thuật toán. 
+=== PAGE 12 --- 
+● Đảm bảo kết quả đầu ra đúng định dạng chung. 
+● Có lịch sử thực hiện để phục vụ giao diện. 
+● Kiểm tra nghiệm trước khi đưa vào đánh giá. 
+GIAI ĐOẠN 6. KIỂM THỬ VÀ ĐÁNH GIÁ TÍNH ĐÚNG ĐẮN 6.1. Nhiệm vụ 
+● Kiểm tra chương trình đọc dữ liệu. 
+● Kiểm tra hàm tính lợi nhuận. 
+● Kiểm tra hàm xác thực ràng buộc. 
+● Kiểm tra từng thuật toán. 
+● Kiểm tra khả năng xử lý các bài toán có kích thước khác nhau. 6.2. Các trường hợp kiểm thử Trường hợp 1: Dữ liệu nhỏ Sử dụng ví dụ 4 mặt hàng để kiểm tra thủ công tất cả 16 phương án chọn. Mục đích: Đối chiếu kết quả thuật toán với kết quả kiểm tra chính xác. Trường hợp 2: Dữ liệu trung bình Sử dụng các bài toán có số lượng mặt hàng và ràng buộc lớn hơn. Mục đích: Kiểm tra chất lượng lời giải và thời gian chạy. Trường hợp 3: Dữ liệu lớn Sử dụng các bài toán có kích thước lớn trong OR-Library. Mục đích: Đánh giá khả năng mở rộng và giới hạn xử lý của từng thuật toán. 6.3. Lưu ý khi kiểm thử 
+● GA và SA có yếu tố ngẫu nhiên nên cần chạy nhiều lần trên cùng một dữ liệu. 
+● Ghi lại giá trị tốt nhất, trung bình và độ ổn định của kết quả. 
+● DP cần ghi nhận trường hợp vượt giới hạn thời gian hoặc bộ nhớ. 
+● Không được xem thuật toán bị dừng do hết thời gian hoặc bộ nhớ là có kết quả lợi nhuận bằng 0. 
+=== PAGE 13 --- 
+● Tất cả nghiệm đưa vào so sánh phải được kiểm tra tính khả thi. 6.4. Kết quả cần hoàn thành 
+● Có kết quả kiểm thử cho từng thuật toán. 
+● Phát hiện và sửa lỗi. 
+● Đảm bảo nghiệm không vi phạm ràng buộc. 
+● Có dữ liệu kiểm thử đủ để tích hợp vào giao diện. 
+GIAI ĐOẠN 7. XÂY DỰNG GIAO DIỆN PYTHON 7.1. Mục tiêu Xây dựng giao diện trực quan cho phép người dùng chọn dữ liệu, lựa chọn thuật toán, theo dõi quá trình thực hiện và xem kết quả đánh giá. Sử dụng thư viện PySide6 để xây dựng giao diện. 7.2. Các màn hình chính Màn hình 1: Trang chủ (Home Page) 
+● Giới thiệu đề tài. 
+● Hiển thị thông tin tổng quan về bài toán MKP. 
+● Giới thiệu 4 thuật toán được sử dụng. 
+● Điều hướng đến các chức năng chính. Màn hình 2: Dataset Page 
+● Chọn file dữ liệu. 
+● Chọn bài toán cụ thể trong file. 
+● Hiển thị số lượng mặt hàng. 
+● Hiển thị số lượng ràng buộc. 
+● Hiển thị lợi nhuận và ma trận tài nguyên. 
+● Hiển thị giới hạn tài nguyên. Màn hình 3: Algorithm Page Cho phép người dùng: 
+● Chọn một trong 4 thuật toán. 
+● Thiết lập các tham số cần thiết. 
+=== PAGE 14 --- 
+● Nhấn Run để chạy thuật toán. 
+● Nhấn Step để theo dõi từng bước. 
+● Nhấn Run All để chạy toàn bộ quá trình. 
+● Nhấn Reset để chạy lại từ đầu. 
+● Điều chỉnh tốc độ mô phỏng. Thông tin hiển thị trong quá trình chạy: 
+● Greedy: Mặt hàng đang xét, điểm ưu tiên và quyết định chọn hoặc bỏ. 
+● DP: Trạng thái đang xét, giá trị cập nhật và quá trình truy vết. 
+● GA: Thế hệ hiện tại, nghiệm tốt nhất và giá trị Fitness. 
+● SA: Nghiệm hiện tại, nghiệm mới, nhiệt độ và quyết định chấp nhận. Màn hình 4: Comparison Page 
+● Hiển thị kết quả của 4 thuật toán. 
+● So sánh tổng lợi nhuận. 
+● So sánh thời gian thực thi. 
+● So sánh khoảng cách đến nghiệm tối ưu tham chiếu. 
+● Hiển thị biểu đồ. 
+● Đưa ra nhận xét về chất lượng và hiệu suất của từng thuật toán. 7.3. Yêu cầu kỹ thuật 
+● Giao diện không bị treo khi thuật toán chạy. 
+● Sử dụng luồng xử lý riêng (Worker/Thread) để chạy thuật toán. 
+● Có thể cập nhật tiến trình và thông tin trong quá trình thực hiện. 
+● Dữ liệu hiển thị phải lấy từ kết quả thực tế của thuật toán. 
+● Không được để phần mô phỏng làm sai lệch kết quả tính toán. 7.4. Kết quả cần hoàn thành 
+● Hoàn thành giao diện chính. 
+● Có thể chọn và xem dataset. 
+● Có thể chạy từng thuật toán. 
+● Có thể theo dõi quá trình thực hiện. 
+● Có thể xem kết quả và so sánh 4 thuật toán. 
+GIAI ĐOẠN 8. TÍCH HỢP CÁC THUẬT TOÁN VÀO GIAO DIỆN 
+=== PAGE 15 --- 8.1. Nhiệm vụ 
+● Kết nối giao diện với bộ đọc dữ liệu. 
+● Kết nối giao diện với 4 thuật toán. 
+● Kết nối thuật toán với bộ đánh giá và kiểm tra nghiệm. 
+● Hiển thị lịch sử thực hiện. 
+● Hiển thị kết quả sau khi chạy. 
+● Kiểm tra khả năng chạy riêng lẻ và chạy đồng thời theo lượt cả 4 thuật toán. 8.2. Quy trình hoạt động của chương trình 1. Người dùng mở chương trình. 2. Chọn file dataset. 3. Chọn bài toán cụ thể trong file. 4. Chương trình đọc và hiển thị thông tin dữ liệu. 5. Người dùng chọn thuật toán cần chạy. 6. Chương trình thực thi thuật toán. 7. Giao diện cập nhật quá trình thực hiện. 8. Thuật toán hoàn thành và trả kết quả. 9. Chương trình hiển thị nghiệm, lợi nhuận, tài nguyên sử dụng và thời gian chạy. 10. Người dùng có thể tiếp tục chạy thuật toán khác hoặc chọn chức năng so sánh cả 4 thuật toán. 8.3. Kết quả cần hoàn thành 
+● Tích hợp thành công 4 thuật toán. 
+● Chạy được từng thuật toán từ giao diện. 
+● Hiển thị đúng thông tin trong quá trình chạy. 
+● Hiển thị đúng kết quả cuối cùng. 
+● Chạy thử toàn bộ chương trình để kiểm tra lỗi tích hợp. 
+GIAI ĐOẠN 9. THỰC NGHIỆM VÀ SO SÁNH 4 THUẬT TOÁN 9.1. Mục tiêu Đây là giai đoạn quan trọng để đáp ứng yêu cầu phân tích, đánh giá và so sánh các thuật toán trên bài toán thực tế số 4. 
+=== PAGE 16 --- Nhóm không chỉ trình bày nguyên lý hoạt động mà phải sử dụng kết quả thực nghiệm để chứng minh thuật toán nào có chất lượng lời giải tốt hơn, thuật toán nào chạy nhanh hơn và thuật toán nào phù hợp với từng quy mô dữ liệu. 9.2. Các tiêu chí đánh giá Tiêu chí 1: Chất lượng lời giải 
+● Tổng lợi nhuận đạt được. 
+● Nghiệm có thỏa mãn các ràng buộc hay không. 
+● So sánh với giá trị tối ưu tham chiếu , nếu có. 𝑍 * Tiêu chí 2: Thời gian thực thi 
+● Đo thời gian chạy của từng thuật toán. 
+● So sánh thời gian trên cùng một bài toán. 
+● Không tính thời gian cập nhật biểu đồ hoặc hiển thị giao diện vào thời gian chạy thuật toán. Tiêu chí 3: Optimality Gap Nếu có giá trị tối ưu tham chiếu đáng tin cậy, tính: Trong đó: 
+● Z_ref: Giá trị tối ưu tham chiếu. 
+● : Giá trị lời giải thuật toán tìm được. 𝑍 Gap càng nhỏ thì lời giải càng gần giá trị tối ưu. 
+=== PAGE 17 --- Nếu không có giá trị tối ưu tham chiếu thì không tự đặt ra Gap. Khi đó nhóm chỉ so sánh lợi nhuận và các chỉ số khác. Tiêu chí 4: Độ ổn định Áp dụng chủ yếu cho GA và SA: 
+● Chạy nhiều lần trên cùng một bài toán. 
+● Ghi nhận kết quả tốt nhất. 
+● Tính kết quả trung bình. 
+● Đánh giá mức độ dao động giữa các lần chạy. Tiêu chí 5: Khả năng mở rộng 
+● Đánh giá khi số lượng mặt hàng tăng. 
+● Đánh giá khi số lượng ràng buộc tăng. 
+● Ghi nhận thuật toán có bị chậm hoặc vượt giới hạn bộ nhớ hay không. 9.3. Nguyên tắc thực nghiệm công bằng 
+● Cả 4 thuật toán sử dụng cùng một dataset. 
+● Cùng một mô hình toán học. 
+● Cùng một bộ kiểm tra nghiệm. 
+● Chạy trên cùng môi trường máy tính. 
+● Thống nhất cách đo thời gian. 
+● GA và SA cần chạy nhiều lần với các giá trị khởi tạo ngẫu nhiên được ghi nhận. 
+● DP phải ghi rõ giới hạn thời gian và bộ nhớ nếu có. 9.4. Kết quả cần hoàn thành 
+● Bảng kết quả thực nghiệm. 
+● Biểu đồ so sánh. 
+● Nhận xét ưu điểm và nhược điểm của từng thuật toán. 
+● Phân tích nguyên nhân dẫn đến sự khác biệt. 
+● Kết luận thuật toán phù hợp với từng quy mô và trường hợp dữ liệu. Lưu ý: Không mặc định thuật toán nào tốt nhất trước khi có kết quả thực nghiệm. 
+GIAI ĐOẠN 10. HOÀN THIỆN BÁO CÁO VÀ THUYẾT TRÌNH 
+=== PAGE 18 --- 10.1. Nội dung báo cáo Chương 1: Giới thiệu đề tài 
+● Lý do chọn đề tài. 
+● Giới thiệu bài toán chọn hàng vận chuyển. 
+● Mục tiêu thực hiện. 
+● Phạm vi nghiên cứu. Chương 2: Cơ sở lý thuyết và mô hình bài toán 
+● Giới thiệu bài toán MKP. 
+● Trình bày mô hình toán học. 
+● Giải thích các thành phần của mô hình. 
+● Giới thiệu nguồn dataset OR-Library. Chương 3: Phân tích 4 thuật toán 
+● Greedy. 
+● Dynamic Programming. 
+● Genetic Algorithm. 
+● Simulated Annealing. Với mỗi thuật toán cần có nguyên lý, các bước thực hiện, cách áp dụng vào MKP, độ phức tạp, ưu điểm và nhược điểm. Chương 4: Xây dựng chương trình 
+● Công nghệ sử dụng. 
+● Cấu trúc thư mục. 
+● Thiết kế các module. 
+● Cách triển khai thuật toán. 
+● Thiết kế giao diện. 
+● Quy trình hoạt động của chương trình. Chương 5: Thực nghiệm và đánh giá 
+● Mô tả dữ liệu thực nghiệm. 
+● Thiết lập tham số. 
+● Kết quả chạy từng thuật toán. 
+● Bảng và biểu đồ so sánh. 
+=== PAGE 19 --- 
+● Phân tích kết quả. 
+● Đánh giá ưu điểm, nhược điểm của từng thuật toán. Chương 6: Kết luận 
+● Tổng kết kết quả đạt được. 
+● Đánh giá mức độ hoàn thành. 
+● Hạn chế của chương trình. 
+● Hướng phát triển trong tương lai. 10.2. Nội dung demo khi thuyết trình 1. Giới thiệu bài toán MKP. 2. Giới thiệu dataset sử dụng. 3. Mở chương trình và chọn bài toán. 4. Chạy lần lượt 4 thuật toán. 5. Giải thích quá trình hoạt động của từng thuật toán. 6. Hiển thị kết quả của từng thuật toán. 7. Chạy chức năng so sánh. 8. Phân tích biểu đồ và bảng kết quả. 9. Đưa ra kết luận về hiệu suất của các thuật toán. 10.3. Kết quả cần hoàn thành 
+● Báo cáo hoàn chỉnh. 
+● Slide thuyết trình. 
+● Source code đầy đủ. 
+● Giao diện chạy ổn định. 
+● Dataset sử dụng. 
+● Bảng kết quả và biểu đồ thực nghiệm. 
+● Kịch bản demo. 

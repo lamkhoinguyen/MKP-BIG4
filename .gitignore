@@ -6,3 +6,10 @@ venv/
 .vscode/
 .DS_Store
 *.log
+
+# Ket qua chay tam (khong commit)
+results/*/
+
+# Rieng tu — khong push len GitHub
+docs/HANDOFF.md
+docs/LOG.md
