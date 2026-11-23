@@ -1,355 +1,377 @@
-# MKP-BIG4 — Bài toán chọn hàng vận chuyển (Multidimensional Knapsack Problem)
+# MKP-BIG4 — Bài toán chọn hàng vận chuyển đa chiều
 
-Đồ án nhóm: xây dựng chương trình giải bài toán MKP bằng **4 thuật toán** (Greedy, Dynamic Programming, Genetic Algorithm, Simulated Annealing), sau đó **đo và so sánh** chất lượng lời giải, thời gian chạy trên cùng một bộ dữ liệu OR-Library.
+Đồ án nhóm giải bài toán **Multidimensional Knapsack Problem (MKP)** bằng **4 thuật toán**
+(Greedy, Dynamic Programming, Genetic Algorithm, Simulated Annealing), chạy trên cùng bộ dữ
+liệu chuẩn **OR-Library**, sau đó đo và so sánh chất lượng lời giải, thời gian chạy, độ ổn
+định. Dự án gồm **CLI** và **giao diện desktop PySide6** để chạy thực nghiệm và trực quan hóa.
 
-- Ngôn ngữ: **Python 3** (ưu tiên viết từ scratch)
-- Giao diện: **PySide6** (phần sau)
-- Dữ liệu: OR-Library — 11 file, đã có sẵn trong repo
-- Spec đầy đủ: [`BIG4_spec_clean.txt`](BIG4_spec_clean.txt)
+- Ngôn ngữ: **Python 3.10+**, thư viện **NumPy**
+- Giao diện: **PySide6** + **Matplotlib**
+- Dữ liệu: **OR-Library** — 11 file, 325 bài (đã có sẵn trong repo)
+- Kiểm thử: **pytest** — **134 passed**
 
 ---
 
-## 1. Trạng thái hiện tại
+## 1. Thông tin dự án
 
-| Hạng mục | Trạng thái | File |
-|----------|------------|------|
-| Đọc dữ liệu OR-Library (11 file, 325 bài) | ✅ Xong | `src/core/data_loader.py` |
-| Mô hình bài toán `MKPProblem` / `MKPResult` | ✅ Xong | `src/core/model.py` |
-| Tính lợi nhuận, tài nguyên, kết quả | ✅ Xong | `src/core/evaluator.py` |
-| Kiểm tra nghiệm hợp lệ | ✅ Xong | `src/core/validator.py` |
-| Hằng số chung (benchmark, seed, status) | ✅ Xong | `src/core/config.py` |
-| Quy ước interface 4 thuật toán | ✅ Xong | `src/algorithms/__init__.py` |
-| **4 thuật toán** (Greedy, DP, GA, SA) | ✅ Xong | `src/algorithms/*.py` |
-| Chạy benchmark / so sánh (CLI, session) | ✅ Xong | `src/experiments/` |
-| **Giao diện PySide6** (4 trang, session, xuất) | ✅ Xong | `src/gui/` |
-| Điểm vào GUI | ✅ `python -m src.gui.main` | `src/gui/main.py` |
-| Test tự kiểm | ✅ Xong — `127 passed` | `tests/` |
+### 1.1. Bài toán
 
-**Tóm lại:** đồ án đã hoàn thành đủ 4 thuật toán, CLI experiments và GUI PySide6. Chạy `python -m src.gui.main` để dùng giao diện.
+Cho `n` mặt hàng và `m` loại tài nguyên (ràng buộc). Mỗi mặt hàng `j` có:
 
-### 1.1. Chạy giao diện desktop
+- lợi nhuận `p_j`,
+- lượng tài nguyên `r_ij` tiêu thụ cho ràng buộc `i`,
+- giới hạn tài nguyên `b_i`.
 
-```bash
-pip install -r requirements.txt
-python -m src.gui.main
+Cần chọn tập mặt hàng (biến nhị phân `x_j ∈ {0,1}`) sao cho **tổng lợi nhuận lớn nhất**
+mà **không vượt bất kỳ ràng buộc tài nguyên nào**:
+
+```
+maximize   Σ p_j · x_j
+subject to Σ r_ij · x_j ≤ b_i     (i = 1..m)
+           x_j ∈ {0, 1}
 ```
 
-- 4 trang: **Home / Dataset / Algorithm / Comparison**; `Ctrl+1..4` chuyển trang.
-- **Dataset**: chọn 1 bài xem `p_j/r_ij/b_i`, hoặc **(tất cả bài trong file)** để xem bảng tổng hợp (tên, n, m, z_ref, tổng lợi nhuận, độ chặt) rồi chạy hàng loạt.
-- **Algorithm**: Run 1 thuật toán, Run All 4 thuật toán (hoặc 4 × mọi bài khi chọn "tất cả"), Reset; xem kết quả và đường hội tụ.
-- **Comparison**: Run Session (N = 1/3/5/10 seed cho GA/SA), bảng + biểu đồ + nhận xét tự động; khi Dataset chọn "tất cả" thì chạy từng bài và lưu từng phiên vào `results/gui_sessions/`.
-- **Xuất**: CSV/JSON/PNG/HTML; PDF tùy chọn.
-- `Ctrl+R` chạy thao tác chính của trang; `Esc` dừng phát lại biểu đồ.
-- Test GUI: `python -m pytest tests/test_gui_analytics.py tests/test_gui_session_store.py tests/test_gui_smoke.py -v`
+### 1.2. Mục tiêu
+
+- Cài đặt 4 thuật toán theo **một hợp đồng (contract) chung** để so sánh công bằng.
+- Chạy thực nghiệm trên bộ dữ liệu OR-Library, tính **optimality gap** so với `z_ref`.
+- So sánh 4 thuật toán theo: chất lượng (profit/gap), hiệu năng (runtime/status) và độ ổn
+  định (chỉ GA/SA khi chạy nhiều seed).
+- Cung cấp CLI và GUI để tái lập kết quả, xuất báo cáo (CSV/JSON/PNG/HTML).
+
+### 1.3. Kết quả đạt được
+
+| Hạng mục | Trạng thái |
+|----------|------------|
+| Đọc dữ liệu OR-Library (11 file, 325 bài) | ✅ `src/core/data_loader.py` |
+| Mô hình bài toán + kết quả | ✅ `src/core/model.py` |
+| Đánh giá lợi nhuận / gap / hợp lệ | ✅ `src/core/evaluator.py`, `validator.py` |
+| 4 thuật toán theo contract chung | ✅ `src/algorithms/*.py` |
+| Benchmark / so sánh / xuất báo cáo | ✅ `src/experiments/` |
+| Giao diện PySide6 (4 trang, session) | ✅ `src/gui/` |
+| Test tự kiểm | ✅ **134 passed** |
+
+Benchmark 325 bài (time limit 60s, seed 1), gap trung bình so với `z_ref`:
+
+| Thuật toán | Gap trung bình | Ghi chú |
+|------------|----------------|---------|
+| Greedy | ~1.05% | Tất định, luôn khả thi, rất nhanh |
+| Dynamic Programming | ~1.54% | Chính xác nhưng OOM trên 274/325 bài lớn |
+| Genetic Algorithm | ~0.42% | Chất lượng tốt nhất, chạy nhiều seed |
+| Simulated Annealing | ~1.11% | Cân bằng, mạnh về thoát cực trị địa phương |
 
 ---
 
-## 2. Cài đặt & kiểm tra
+## 2. Thông tin dữ liệu (Dataset)
+
+### 2.1. Nguồn
+
+Bộ dữ liệu **OR-Library** (Chu & Beasley), nằm trong `data/mknap/`. Gồm 11 file bài toán
+(tổng **325 bài**) và 1 file giá trị tham chiếu `z_ref`.
+
+| File | Số bài | Mô tả |
+|------|--------|-------|
+| `mknap1.txt` | 7 | Bài nhỏ (`n = 6..10`), có `z_ref` ghi ngay trong file |
+| `mknap2.txt` | 48 | Bộ dữ liệu văn học (SENTO, WEING, …) |
+| `mknapcb1..cb9.txt` | 270 | Bộ Chu & Beasley, mỗi file 30 bài |
+| `mkcbres.txt` | — | Bảng `z_ref` (Best Feasible) cho `mknapcb*` |
+
+Tổng: `7 + 48 + 270 = 325` bài.
+
+### 2.2. Cấu trúc một bài toán
+
+Sau khi nạp, mỗi bài là một `MKPProblem` với:
+
+| Trường | Ý nghĩa | Kiểu |
+|--------|---------|------|
+| `name` | Tên bài (`mknap1_01`, `SENTO1`, …) | `str` |
+| `n` | Số mặt hàng | `int` |
+| `m` | Số ràng buộc tài nguyên | `int` |
+| `profits` | Lợi nhuận `p_j` | `np.ndarray (n,)` |
+| `weights` | Ma trận tài nguyên `r_ij` | `np.ndarray (m, n)` |
+| `capacities` | Giới hạn tài nguyên `b_i` | `np.ndarray (m,)` |
+| `z_ref` | Giá trị tối ưu tham chiếu (có thể `None`) | `float \| None` |
+
+### 2.3. Định dạng hỗ trợ
+
+- **`mknap1` / `mknapcb*`** (OR-Library chuẩn): `K` rồi lặp `K` block
+  `(n m opt) + profits + weights(m×n) + capacities(m)`.
+- **`mknap2`** (văn học): nhiều block `problem TEN.DAT`, thứ tự `m n`, profits, caps,
+  weights, opt; có comment `//` và dấu `+`.
+- `z_ref`: lấy từ trường `opt` nếu `> 0`; nếu file ghi `0` thì tra bảng `mkcbres.txt`.
+
+### 2.4. Đọc dữ liệu
+
+```python
+from src.core.data_loader import get_problem
+
+problem = get_problem("mknap1.txt", 1)   # (tên file, số thứ tự bài tính từ 1)
+print(problem.name, problem.n, problem.m, problem.z_ref)
+```
+
+### 2.5. Optimality gap
+
+`z_ref` là giá trị tối ưu (hoặc tốt nhất đã biết). Gap đo mức kém tối ưu:
+
+```
+gap = (z_ref - profit) / z_ref
+```
+
+- `gap = 0` → đạt đúng `z_ref`.
+- Bài không có `z_ref` → gap để trống (`None`, hiển thị `-`).
+
+### 2.6. Bộ 16 bài benchmark
+
+`config.BENCHMARK_PROBLEMS` chọn 16 bài để so sánh 4 thuật toán:
+
+- `mknap1.txt` — bài 1..7
+- `mknapcb1.txt`, `mknapcb3.txt`, `mknapcb4.txt` — bài 1, 11, 21
+
+---
+
+## 3. Bốn thuật toán
+
+Tất cả cài đặt theo cùng một contract (xem mục 4.4), nên dễ so sánh trực tiếp.
+
+| Thuật toán | Loại | Tất định? | Dùng `seed`? | Điểm mạnh chính |
+|------------|------|-----------|--------------|-----------------|
+| Greedy | Tham lam thích nghi | Có | Không | Rất nhanh, luôn khả thi |
+| Dynamic Programming | Quy hoạch động + cắt nhánh | Có | Không | Tối ưu khi bộ nhớ cho phép |
+| Genetic Algorithm | Tiến hóa + greedy repair | Không | Có | Chất lượng lời giải cao nhất |
+| Simulated Annealing | Luyện kim mô phỏng | Không | Có | Thoát cực trị địa phương tốt |
+
+### 3.1. Greedy (`src/algorithms/greedy.py`)
+
+- **Ý tưởng:** mỗi vòng tính điểm ưu tiên *thích nghi* theo tài nguyên **còn lại**:
+  `score_j = p_j / Σ_i ( r_ij / (b_i - used_i) )`, rồi chọn mặt hàng điểm cao nhất còn vừa
+  ràng buộc, cập nhật tài nguyên và tính lại điểm. Dừng khi không thêm được mặt hàng nào.
+- **Độ phức tạp:** thời gian `O(n²·m)`, bộ nhớ `O(n·m)`.
+- **Ưu:** đơn giản, nhanh, luôn trả nghiệm khả thi. **Nhược:** không đảm bảo tối ưu.
+- **Tất định** — không phụ thuộc `seed`.
+
+### 3.2. Dynamic Programming (`src/algorithms/dynamic_programming.py`)
+
+- **Ý tưởng:** trạng thái sau khi xét `j` mặt hàng là vector tài nguyên đã dùng
+  `R = (r_1..r_m)`, giá trị là lợi nhuận lớn nhất; chuyển trạng thái theo chọn/không chọn
+  mặt hàng. Truy vết ngược bằng mảng `parent/took`.
+- **Tăng tốc:** nghiệm tham lam + local search làm cận dưới, cắt nhánh theo cận trên
+  (fractional bound), loại mặt hàng không bao giờ vừa, gộp trạng thái trùng.
+- **Độ phức tạp:** thời gian `O(n·S·(m + log S))`, bộ nhớ `O(S·m)` với `S` là số trạng thái
+  không bị chi phối (`S` có thể bùng nổ theo tích các capacity).
+- **Giới hạn an toàn:** `DEFAULT_MEMORY_LIMIT_MB = 3000`, `MAX_STATES = 2_000_000`. Vượt
+  giới hạn → trả `status = out_of_memory` (kèm nghiệm tốt nhất hiện có), **không** coi là
+  lỗi lợi nhuận 0.
+- **Tất định** — chính xác khi bộ nhớ/thời gian cho phép.
+
+### 3.3. Genetic Algorithm (`src/algorithms/genetic_algorithm.py`)
+
+- **Ý tưởng:** GA nhị phân (cá thể là vector 0/1) + **greedy repair** đảm bảo khả thi.
+  Chọn lọc tournament, lai ghép, đột biến, giữ elite qua các thế hệ.
+- **Tham số chính:** `POPULATION_SIZE = 100`, `MAX_GENERATIONS = 500`,
+  `CROSSOVER_RATE = 0.85`, `ELITE_COUNT = 2`, `TOURNAMENT_SIZE = 3`.
+- **Ngẫu nhiên:** dùng `np.random.default_rng(seed)` → cùng seed + cùng time limit cho kết
+  quả tái lập được. Hết giờ → `status = timeout`.
+
+### 3.4. Simulated Annealing (`src/algorithms/simulated_annealing.py`)
+
+- **Ý tưởng:** xuất phát từ nghiệm tham lam khả thi; sinh nghiệm lân cận bằng đảo 1 bit hoặc
+  swap 1-0; nhận nghiệm xấu hơn với xác suất `exp(delta / T)`; nhiệt độ giảm theo lịch hình
+  học `T ← alpha·T`; restart khi đứng yên quá lâu.
+- **Tham số chính:** `MAX_ITERATIONS = 5_000_000`, `COOLING_ITERATIONS = 200_000`,
+  `RESTART_AFTER = 20_000`, `T_MIN = 1e-3`.
+- **Độ phức tạp:** thời gian `O(MAX_ITERATIONS·m)`, bộ nhớ `O(n + m)`.
+- **Ngẫu nhiên:** dùng `seed` để tái lập. Hết giờ → `status = timeout`.
+
+> Greedy/DP tất định nên chỉ chạy 1 lần; GA/SA chạy `N` seed và mới tính được Avg/Worst/Std.
+
+---
+
+## 4. Các tầng của dự án
+
+Dự án tổ chức theo **5 tầng** độc lập, phụ thuộc một chiều từ trên xuống; tầng dưới không
+biết tầng trên.
+
+```
+MKP-BIG4/
+├── data/mknap/           ① TẦNG DỮ LIỆU  — file OR-Library (không sửa)
+│
+├── src/core/             ② TẦNG LÕI      — mô hình & đánh giá, không phụ thuộc gì phía trên
+│   ├── config.py            hằng số: TIME_LIMIT_SECONDS=60, SEED, STATUS_*, BENCHMARK_PROBLEMS
+│   ├── model.py             MKPProblem, MKPResult
+│   ├── data_loader.py       load_problems(), get_problem(), cache, đọc z_ref
+│   ├── evaluator.py         build_result(), compute_profit(), compute_optimality_gap()
+│   └── validator.py         is_feasible(), find_violations()
+│
+├── src/algorithms/       ③ TẦNG THUẬT TOÁN — 4 solver theo cùng contract
+│   ├── __init__.py          chữ ký solve(), ALGORITHM_NAMES, get_solver()
+│   ├── greedy.py
+│   ├── dynamic_programming.py
+│   ├── genetic_algorithm.py
+│   └── simulated_annealing.py
+│
+├── src/experiments/      ④ TẦNG THỰC NGHIỆM — chạy hàng loạt & so sánh
+│   ├── experiment_runner.py  chạy 1 thuật toán trên dataset, lưu kết quả/session
+│   ├── metrics.py            tổng hợp profit/gap/runtime/status
+│   └── comparison.py         sinh CSV/PNG/report so sánh 4 thuật toán
+│
+├── src/gui/              ⑤ TẦNG GIAO DIỆN — PySide6
+│   ├── main.py              điểm vào: python -m src.gui.main
+│   ├── main_window.py       khung cửa sổ + 4 trang
+│   ├── app_state.py         trạng thái chia sẻ giữa các trang
+│   ├── analytics.py         thống kê seed, history, nhận xét tự động
+│   ├── session_store.py     lưu/đọc/xuất phiên (JSON, CSV, HTML, PNG)
+│   ├── pages/               Home, Dataset, Algorithm, Comparison
+│   ├── widgets/             sidebar, bảng, biểu đồ, panel kết quả…
+│   ├── workers/             chạy thuật toán trong QThread (không treo UI)
+│   └── styles/theme.qss     giao diện QSS
+│
+├── tests/                (kiểm thử) — core, contract, 4 thuật toán, experiments, GUI
+├── run_algo.py / run_ga.py / run_sa.py / benchmark_algo.py   CLI tiện dụng ở gốc repo
+├── requirements.txt
+└── pytest.ini
+```
+
+### 4.1. Vai trò từng tầng
+
+| Tầng | Vai trò | Không phụ thuộc vào |
+|------|---------|---------------------|
+| ① Dữ liệu | Cung cấp file bài toán gốc | — |
+| ② Lõi (core) | Nạp dữ liệu, mô hình, tính lợi nhuận/gap/khả thi | algorithms, experiments, gui |
+| ③ Thuật toán | Giải bài toán, trả `MKPResult` | experiments, gui |
+| ④ Thực nghiệm | Gọi solver hàng loạt, lưu & so sánh kết quả | gui |
+| ⑤ Giao diện | Điều khiển, trực quan hóa, xuất báo cáo | — (tầng trên cùng) |
+
+### 4.2. Luồng dữ liệu
+
+```
+data_loader ──► MKPProblem ──► solver.solve() ──► MKPResult ──► experiments / GUI
+   (①/②)            (②)              (③)              (②)            (④/⑤)
+```
+
+### 4.3. Cấu trúc kết quả `MKPResult`
+
+| Trường | Ý nghĩa |
+|--------|---------|
+| `selected_items` | Danh sách mặt hàng được chọn |
+| `total_profit` | Tổng lợi nhuận |
+| `resource_usage` | Tài nguyên đã dùng theo từng ràng buộc |
+| `feasible` | Nghiệm có hợp lệ không |
+| `runtime` | Thời gian chạy (giây) |
+| `optimality_gap` | Gap so với `z_ref` (nếu có) |
+| `history` | `[{iteration, profit}, …]` để vẽ đường hội tụ |
+| `status` | `ok` / `timeout` / `out_of_memory` |
+| `peak_memory` | Bộ nhớ đỉnh (MB), hiện chỉ DP báo cáo |
+
+### 4.4. Hợp đồng thuật toán (contract)
+
+Mọi solver có đúng chữ ký sau và **luôn** trả `MKPResult` qua `build_result()`:
+
+```python
+def solve(
+    problem: MKPProblem,
+    *,
+    time_limit: float = TIME_LIMIT_SECONDS,
+    seed: int = 0,
+) -> MKPResult: ...
+```
+
+Quy tắc: hết giờ → trả `status=timeout` (không raise); hết bộ nhớ (DP) →
+`status=out_of_memory`; nghiệm là vector numpy 0/1 độ dài `problem.n`; `history` phần tử
+cuối phải khớp lợi nhuận trả về; không đọc file trong `solve`.
+
+---
+
+## 5. Cài đặt
+
+**Yêu cầu:** Python **3.10+**, pip.
 
 ```bash
 # 1. Clone repo
 git clone <url-repo>
 cd MKP-BIG4
 
-# 2. Cài dependency
+# 2. (Khuyến nghị) tạo môi trường ảo
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+source .venv/bin/activate
+
+# 3. Cài dependency (PySide6, matplotlib, numpy, pytest)
 pip install -r requirements.txt
 
-# 3. Chạy test — BẮT BUỘC thấy "127 passed"
+# 4. Chạy test — phải thấy "134 passed"
 python -m pytest tests/
 ```
 
-Nếu test đỏ → môi trường hoặc code core đang hỏng, báo lại nhóm trước khi bắt đầu.
+Nếu test đỏ → môi trường hoặc code lõi có vấn đề, kiểm tra lại bước cài đặt trước khi demo.
 
 ---
 
-## 3. Cấu trúc chương trình
+## 6. Chạy demo
 
-```
-MKP-BIG4/
-├── README.md                  ← bạn đang đọc
-├── docs/HANDOFF.md            ← trạng thái hiện tại (ghi đè mỗi lần cập nhật)
-├── docs/LOG.md                ← lịch sử làm việc (append, không xóa cũ)
-├── BIG4_spec_clean.txt        ← spec đồ án (đọc 1 lần)
-├── main.py                    ← điểm vào (chưa code)
-├── requirements.txt           ← PySide6, matplotlib, pytest
-├── pytest.ini                 ← cấu hình test
-│
-├── data/mknap/                ← DỮ LIỆU (không sửa)
-│   ├── mknap1.txt             7 bài nhỏ (n=6..10) — có Z_ref trong file
-│   ├── mknap2.txt             48 bài văn học (SENTO, WEING, …)
-│   ├── mknapcb1..cb9.txt      270 bài Chu & Beasley (mỗi file 30 bài)
-│   └── mkcbres.txt            Z_ref (giá trị tối ưu tham chiếu) cho mknapcb
-│
-├── src/
-│   ├── core/                  ✅ ĐÃ XONG — dùng thoải mái, không sửa
-│   │   ├── config.py          hằng số: BENCHMARK, TIME_LIMIT, SEED, STATUS
-│   │   ├── model.py           MKPProblem, MKPResult
-│   │   ├── data_loader.py     load_problems(), get_problem()
-│   │   ├── evaluator.py       build_result(), compute_profit(), …
-│   │   └── validator.py       is_feasible(), find_violations()
-│   │
-│   ├── algorithms/            ❌ MỖI THANH VIÊN 1 FILE — xem mục 5
-│   │   ├── __init__.py        contract chung + get_solver()
-│   │   ├── greedy.py                    ← Thành viên 1
-│   │   ├── dynamic_programming.py       ← Thành viên 2
-│   │   ├── genetic_algorithm.py         ← Thành viên 3
-│   │   └── simulated_annealing.py       ← Thành viên 4
-│   │
-│   ├── experiments/           ❌ Chưa code — chạy benchmark, so sánh 4 thuật toán
-│   └── gui/                   ❌ Chưa code — PySide6
-│
-├── tests/                     ✅ Test core + contract (chạy trước & sau khi code)
-│   ├── test_core.py           kiểm tra model/evaluator/validator/data_loader
-│   └── test_contract.py       bắt đúng chữ ký solve() của 4 thuật toán
-│
-└── results/                   ← nơi lưu biểu đồ, báo cáo (tự sinh)
-```
-
----
-
-## 4. Thông tin đã có sẵn — dùng như thế nào
-
-### 4.1. Đọc một bài toán
-
-```python
-from src.core.data_loader import get_problem
-
-problem = get_problem("mknap1.txt", 1)   # file, số thứ tự bài (tính từ 1)
-# problem.name       → "mknap1_01"
-# problem.n          → số mặt hàng
-# problem.m          → số ràng buộc (tài nguyên)
-# problem.profits    → np.array shape (n,)       lợi nhuận p[j]
-# problem.weights    → np.array shape (m, n)     lượng tài nguyên tiêu thụ
-# problem.capacities → np.array shape (m,)       giới hạn b[i]
-# problem.z_ref      → giá trị tối ưu tham chiếu (để tính gap), có thể None
-```
-
-Các file benchmark đang dùng (trong `config.BENCHMARK_PROBLEMS`):
-
-- `mknap1.txt` bài 1–7
-- `mknapcb1.txt`, `mknapcb3.txt`, `mknapcb4.txt` bài 1, 11, 21
-
-Tổng **16 bài** để so sánh 4 thuật toán.
-
-### 4.2. Trả kết quả — bắt buộc dùng `build_result`
-
-```python
-import numpy as np
-from src.core.evaluator import build_result
-from src.core.config import STATUS_OK, STATUS_TIMEOUT
-
-x = np.zeros(problem.n, dtype=int)   # vector 0/1, x[j]=1 → chọn mặt hàng j
-x[0] = 1; x[3] = 1                   # ví dụ chọn 2 mặt hàng
-
-result = build_result(
-    problem, x,
-    runtime=0.42,                    # giây
-    history=[{"iteration": 1, "profit": 1200}],  # tùy chọn, để vẽ đồ thị
-    status=STATUS_OK,                # hoặc STATUS_TIMEOUT nếu hết giờ
-)
-# result.total_profit, result.feasible, result.optimality_gap, result.selected_items, …
-```
-
-`build_result` **tự tính** lợi nhuận, tổng tài nguyên, có hợp lệ không, và `optimality_gap = (z_ref − profit) / z_ref`. Bạn **không** tự tính các thứ này.
-
-### 4.3. Hằng số chung (`src/core/config.py`)
-
-| Hằng | Ý nghĩa |
-|------|----------|
-| `TIME_LIMIT_SECONDS = 60` | giới hạn thời gian mỗi lượt chạy (giây) |
-| `SEED` | danh sách seed cho các lần chạy lặp (GA/SA dùng để tái lập kết quả) |
-| `BENCHMARK_PROBLEMS` | 16 bài benchmark `(tên_file, số_bài)` |
-| `STATUS_OK / STATUS_TIMEOUT / STATUS_OUT_OF_MEMORY` | giá trị cho `result.status` |
-
-### 4.4. Kiểm tra nghiệm
-
-```python
-from src.core.validator import is_feasible, find_violations
-
-is_feasible(problem, x)        # True nếu x nhị phân và không vượt capacity
-find_violations(problem, x)    # danh sách ràng buộc đang bị vi phạm
-```
-
----
-
-## 5. HỢP ĐỒNG ALGORITHM — bắt buộc cho 4 thành viên
-
-> Hướng dẫn chi tiết theo buổi học cho TV1/TV2: [`docs/HUONG_DAN_THANH_VIEN.md`](docs/HUONG_DAN_THANH_VIEN.md)
-
-### 5.1. Ai làm file nào
-
-| Thành viên | File cần sửa | Thuật toán |
-|------------|--------------|------------|
-| **1** | `src/algorithms/greedy.py` | Greedy (tham lam) |
-| **2** | `src/algorithms/dynamic_programming.py` | Quy hoạch động |
-| **3** | `src/algorithms/genetic_algorithm.py` | Di truyền |
-| **4** | `src/algorithms/simulated_annealing.py` | Mô phỏng luyện kim |
-
-> **Chỉ sửa đúng 1 file của mình.** Không sửa `src/core/`, không sửa file của người khác, không đổi tên file.
-
-### 5.2. Chữ ký — KHÔNG ĐƯỢC ĐỔI
-
-Mỗi file đã có sẵn hàm mẫu. Bạn chỉ điền phần thân hàm:
-
-```python
-def solve(
-    problem: MKPProblem,
-    *,
-    time_limit: float = TIME_LIMIT_SECONDS,
-    seed: int = 0,
-) -> MKPResult:
-    # ... code thuật toán của bạn ...
-    return build_result(problem, x, runtime=..., history=..., status=...)
-```
-
-| Yêu cầu | Chi tiết |
-|---------|----------|
-| Tên hàm | `solve` — cố định |
-| Tham số | `problem` (vị trí); `time_limit`, `seed` (chỉ nhận keyword: `solve(p, time_limit=5, seed=1)`) |
-| Trả về | `MKPResult`, **luôn** qua `build_result(...)` |
-| Nghiệm | vector numpy 0/1 độ dài `problem.n` |
-| Hết giờ | dừng sớm, trả `status=STATUS_TIMEOUT` — **không raise** |
-| Không đọc file | `solve` nhận `problem` đã load sẵn; không mở file data |
-| Random | GA/SA **bắt buộc** dùng `seed` (`np.random.default_rng(seed)`) để chạy lại được |
-| History | tùy chọn: `list[dict]` dạng `{"iteration": int, "profit": float}` để vẽ đồ thị |
-
-**Sai bất kỳ mục nào → `tests/test_contract.py` đỏ.** Đây là cơ chế chống “mỗi người một kiểu”.
-
-### 5.3. Ví dụ khung hoàn chỉnh (Greedy)
-
-```python
-import time
-import numpy as np
-
-from src.algorithms import TIME_LIMIT_SECONDS
-from src.core.config import STATUS_OK, STATUS_TIMEOUT
-from src.core.evaluator import build_result
-from src.core.model import MKPProblem, MKPResult
-
-
-def solve(
-    problem: MKPProblem,
-    *,
-    time_limit: float = TIME_LIMIT_SECONDS,
-    seed: int = 0,
-) -> MKPResult:
-    start = time.perf_counter()
-    x = np.zeros(problem.n, dtype=int)
-    history = []
-
-    # --- thuật toán của bạn ---
-    # while True:
-    #     if time.perf_counter() - start > time_limit:
-    #         return build_result(problem, x, runtime=..., history=history,
-    #                            status=STATUS_TIMEOUT)
-    #     ... chon mat hang tiep theo ...
-    #     history.append({"iteration": k, "profit": current_profit})
-    # -------------------------
-
-    runtime = time.perf_counter() - start
-    return build_result(problem, x, runtime=runtime, history=history, status=STATUS_OK)
-```
-
-Mỗi file stub còn có **gợi ý riêng** trong docstring đầu file (ví dụ Greedy: điểm ưu tiên trên nhiều ràng buộc; DP: cảnh báo bộ nhớ; GA: crossover/mutation; SA: nhiệt độ) — mở file ra đọc trước khi bắt tay vào code.
-
-### 5.4. Quy trình làm việc của từng thành viên
+### 6.1. Giao diện desktop (demo chính)
 
 ```bash
-# 0. Clone + cài + test (1 lần)
-pip install -r requirements.txt
-python -m pytest tests/          # phải "127 passed"
-
-# 1. Code trong file của mình
-#    src/algorithms/greedy.py    (ví dụ thành viên 1)
-
-# 2. Test lại — cả core lẫn contract
-python -m pytest tests/
-
-# 3. (Khuyến nghị) test nhanh trên 1 bài nhỏ
-python -c "
-from src.core.data_loader import get_problem
-from src.algorithms import get_solver
-p = get_problem('mknap1.txt', 1)
-r = get_solver('greedy')(p, time_limit=5, seed=0)
-print('profit', r.total_profit, 'z_ref', p.z_ref, 'gap', r.optimality_gap, 'feasible', r.feasible)
-"
-
-# 4. Commit chỉ file của mình
-git add src/algorithms/greedy.py
-git commit -m "greedy: hoan thanh solve"
-git push
+python -m src.gui.main
 ```
 
-### 5.5. Mẫu test riêng (khuyến nghị)
+Cửa sổ gồm 4 trang (chuyển nhanh bằng `Ctrl+1..4`):
 
-Tạo `tests/test_greedy.py` (hoặc `test_dp.py`, `test_ga.py`, `test_sa.py` — tên file đã có sẵn, đang rỗng):
+1. **Home** — giới thiệu bài toán và lối tắt đến các trang.
+2. **Dataset** — chọn file (vd `mknap1.txt`), chọn bài; xem ma trận `p_j / r_ij / b_i`, hoặc
+   chọn *(tất cả bài trong file)* để xem bảng tổng hợp.
+3. **Algorithm** — **Run** một thuật toán hoặc **Run All** cả 4; xem bảng kết quả và đường
+   hội tụ. Khi Dataset chọn "tất cả", Run All chạy `4 × mọi bài`.
+4. **Comparison** — **Run Session** với `N = 1/3/5/10` seed (GA/SA chạy N lần, Greedy/DP 1
+   lần); xem bảng so sánh (có cột **Số seed (N)**), biểu đồ và nhận xét tự động. Nút **Dùng
+   kết quả Run All** tái sử dụng kết quả đã chạy mà không cần chạy lại.
 
-```python
-import numpy as np
-from src.core.data_loader import get_problem
-from src.algorithms import get_solver
+Xuất kết quả: **CSV / JSON / PNG / HTML** (PDF tùy chọn); phiên được lưu trong
+`results/gui_sessions/` (tự tạo khi chạy).
 
+Kịch bản demo 3–5 phút:
 
-def test_greedy_mknap1():
-    p = get_problem("mknap1.txt", 1)
-    r = get_solver("greedy")(p, time_limit=5, seed=0)
-    assert r.feasible
-    assert r.total_profit > 0
-    assert r.total_profit <= p.z_ref * 1.01   # không vượt quá z_ref (hoặc cho phép slightly better)
-```
+1. Mở app → trang **Home** giới thiệu bài toán.
+2. **Dataset**: chọn `mknap1.txt`, bài 1 → xem `p_j / r_ij / b_i`.
+3. **Algorithm**: **Run All** (Greedy, DP, GA, SA) → xem bảng + đường hội tụ.
+4. **Comparison**: chọn `N = 3`, time limit 5–10s → **Run Session**.
+5. Chỉ bảng: cột `Số seed (N)`, giải thích ô `-` của Greedy/DP (tất định).
+6. Phân tích biểu đồ Profit/Gap/Runtime + nhận xét tự động → xuất báo cáo.
 
----
+### 6.2. Dòng lệnh (CLI)
 
-## 6. Experiments và GUI (đã hoàn thành)
-
-1. **`src/experiments/`** — chạy benchmark, session và so sánh 4 thuật toán:
-   `python -m src.experiments <algo> <dataset> <bai> -t 30 -s 1 [--session ten]`
-2. **`python -m src.experiments.comparison`** — sinh CSV/PNG/report từ kết quả.
-3. **`src/gui/`** — giao diện PySide6: Dataset, Run/Run All, Comparison Session,
-   lưu lịch sử và xuất CSV/JSON/PNG/HTML (xem mục 1.1).
-
-Điểm vào GUI chính thức là `python -m src.gui.main`; `main.py` ở thư mục gốc để trống.
-
----
-
-## 7. Quy ước Git
-
-- Branch feature nếu muốn: `feature/greedy`, `feature/dp`, … rồi PR về `main`
-- Commit message ngắn, có tên thuật toán: `greedy: them vong chon`, `dp: trang thai 2D`
-- **Không** commit file data, `__pycache__`, kết quả chạy tạm
-- Trước khi push: `python -m pytest tests/` phải xanh
-
----
-
-## 8. Câu hỏi thường gặp
-
-**Q: Tôi được sửa `src/core/` không?**  
-A: Không. Core đã test xong. Nếu nghĩ core có bug → báo lại nhóm, không tự sửa song song.
-
-**Q: `solve` được raise Exception không?**  
-A: Chỉ raise khi input sai (ví dụ shape `x` sai). Lỗi hết giờ / không tìm được nghiệm → vẫn trả `MKPResult` với `status` phù hợp.
-
-**Q: `seed` dùng cho Greedy/DP?**  
-A: Greedy/DP thường xác định — có thể bỏ qua `seed`, nhưng vẫn giữ tham số trong chữ ký cho đồng bộ.
-
-**Q: Kết quả chạy lại có giống nhau không?**  
-A: GA/SA với cùng `seed` + cùng `time_limit` phải cho kết quả giống nhau.
-
----
-
-## 9. Test hiện có
+Chạy một thuật toán trên một bài hoặc cả dataset:
 
 ```bash
-python -m pytest tests/          # toàn bộ
-python -m pytest tests/test_contract.py -v   # chỉ check chữ ký 4 thuật toán
-python -m pytest tests/test_core.py -v       # chỉ check core
+# Cú pháp: python run_algo.py <algo> <dataset> <bài|all> [-t giây] [-s seed]
+python run_algo.py ga mknapcb4 1
+python run_algo.py sa mknapcb4 all -t 10 -s 7
+python run_algo.py greedy mknap1 1
+python run_algo.py --list          # liệt kê dataset
 ```
 
-- `tests/test_core.py` — model, evaluator, validator, data_loader, benchmark có `z_ref`
-- `tests/test_contract.py` — 4 file algorithm có `solve()` đúng chữ ký
-- `tests/test_greedy.py`, `test_dp.py`, `test_ga.py`, `test_sa.py`, `test_comparison.py`, `test_experiments.py` — thuật toán và experiments
-- `tests/test_gui_analytics.py` — thống kê, seeds, history, nhận xét tự động (không cần Qt)
-- `tests/test_gui_session_store.py` — lưu/đọc/xóa/xuất phiên, JSON numpy, ghi atomic
-- `tests/test_gui_smoke.py` — Qt offscreen: 4 trang, Dataset, thread Run, worker
+Tên thuật toán: `greedy`, `dp`, `ga`, `sa` (hoặc tên đầy đủ `dynamic_programming`,
+`genetic_algorithm`, `simulated_annealing`).
 
-Tổng hiện tại: **127 passed**.
+Chạy qua module experiments và lưu kết quả theo session:
+
+```bash
+python -m src.experiments ga mknapcb4 all -t 10 -s 1 --session cb4_t10
+```
+
+Sinh báo cáo so sánh 4 thuật toán (CSV/PNG/report) từ `results/`:
+
+```bash
+python -m src.experiments.comparison
+```
+
+### 6.3. Lưu ý khi demo
+
+- **Greedy/DP tất định:** chỉ chạy 1 lần; ô `Avg/Worst/Std/Gap avg` hiển thị `-` kèm tooltip.
+- **DP dễ OOM** ở bài lớn: chương trình trả nghiệm tốt nhất + `status=out_of_memory`, không
+  sập. Nên chọn bài nhỏ (`mknap1`) khi demo trực tiếp.
+- **GA/SA chạm time limit** là bình thường (thuật toán anytime) → `status=timeout` nhưng vẫn
+  có nghiệm khả thi.
+- Nếu thời gian demo gấp, dùng nút **Dùng kết quả Run All** thay vì chạy lại.
+- `results/` không commit (đã gitignore); file cần đính kèm báo cáo thì xuất riêng.
